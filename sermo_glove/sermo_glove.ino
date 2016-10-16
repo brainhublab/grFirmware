@@ -19,7 +19,7 @@ LSM303 compass;//define compas
 L3G gyro;
 
 //containers for data report
-char report_gyro_and_compass[80];
+char report_gyro_and_compass[80]; //size of bufer 
 
 
 /*=========================================================================
@@ -28,7 +28,8 @@ char report_gyro_and_compass[80];
                               "DISABLE" or "MODE" or "BLEUART" or
                               "HWUART"  or "SPI"  or "MANUAL"
     -----------------------------------------------------------------------*/
-    #define FACTORYRESET_ENABLE         1
+    #define FACTORYRESET_ENABLE         0 //sometimes needs to chage 
+    //#define GAPDEVNAME "[R]_SERMO_"
     #define MINIMUM_FIRMWARE_VERSION    "0.6.6"
     #define MODE_LED_BEHAVIOUR          "MODE"
 /*=========================================================================*/
@@ -57,6 +58,7 @@ void setup(void)
   while (!Serial);  // required for Flora & Micro
   delay(500);
   Serial.begin(115200);
+  
 
   //init compas data
   Wire.begin();
@@ -138,13 +140,25 @@ void loop(void)
   //read and organize compas data
   compass.read();
   gyro.read();
-  snprintf(report_gyro_and_compass, sizeof(report_gyro_and_compass), "A: %6d %6d %6d    M: %6d %6d %6d  G-XYZ: %6d %6d %6d",
+  snprintf(report_gyro_and_compass, sizeof(report_gyro_and_compass), "%d %d %d %d %d %d %d %d %d %d",
     compass.a.x, compass.a.y, compass.a.z,
     compass.m.x, compass.m.y, compass.m.z,
-    gyro.g.x, gyro.g.y, gyro.g.z);
-    
+    gyro.g.x, gyro.g.y, gyro.g.z, 5);
+
+  ble.print(compass.a.x);
+  ble.print(compass.a.y);
+  ble.print(compass.a.z);
+  ble.print(compass.m.x);
+  ble.print(compass.m.y);
+  ble.print(compass.m.z);
+  ble.print(gyro.g.x);
+  ble.print(gyro.g.y);
+  ble.print(gyro.g.z);
+  //ble.print(gyro.a.x)
+  
+   //A, M, gyro 
   Serial.println(report_gyro_and_compass);
-  ble.print(report_gyro_and_compass);//put data in bluetooth stream
+  //ble.print(report_gyro_and_compass);//put data in bluetooth stream
   delay(100);
 
   // Echo received data
