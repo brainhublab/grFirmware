@@ -10,22 +10,46 @@
 #include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
 #include "Adafruit_BLEGatt.h"
+#include "bluefruitConfig.h" // config header
 
-#include "BluefruitConfig.h"
+/*include gattAttributes header with gatt methods and structs */
+#include "sensorAttributes.h"
+
 /*including compas acclerometer and gyro */
 #include <Wire.h>
-#include <LSM303.h>
-#include <L3G.h>
-LSM303 compass;//define compas
-L3G gyro;
+#include <LSM6.h>
+#include <LIS3MDL.h>
 
-//containers for data report
-char report_gyro_and_compass[80]; //size of bufer
-char report_fingers[20];
+/* define IMU sensors */
+LIS3MDL compass; //TODO need to be mag
+LSM6 gyro;
+
+
+//sensor sign
+int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1};
+
+//containers for data report TODO  move t to struct
 char report_gyro[20];
 char report_magnet[20];
 char report_accelerometer[20];
 
+//Some defines for gyroscope data
+#define GRAVITY 256  //this equivalent to 1G in the raw data coming from the accelerometer
+
+#define ToRad(x) ((x)*0.01745329252)  // *pi/180
+#define ToDeg(x) ((x)*57.2957795131)  // *180/pi
+
+#define TCAADDR 0x70
+
+// LSM303/LIS3MDL magnetometer calibration constants; use the Calibrate example from
+// the Pololu LSM303 or LIS3MDL library to find the right values for your board
+
+#define M_X_MIN -1000
+#define M_Y_MIN -1000
+#define M_Z_MIN -1000
+#define M_X_MAX +1000
+#define M_Y_MAX +1000
+#define M_Z_MAX +1000
 
 /*=========================================================================
     MINIMUM_FIRMWARE_VERSION  Minimum firmware version to have some new features
@@ -33,7 +57,7 @@ char report_accelerometer[20];
                               "DISABLE" or "MODE" or "BLEUART" or
                               "HWUART"  or "SPI"  or "MANUAL"
     -----------------------------------------------------------------------*/
-    #define FACTORYRESET_ENABLE         1 //sometimes needs to chage
+    #define FACTORYRESET_ENABLE         0 //sometimes needs to chage
     // #define GAPDEVNAME "[R]_SERMO_"
     #define MINIMUM_FIRMWARE_VERSION    "0.6.6"
     #define MODE_LED_BEHAVIOUR          "MODE"
@@ -54,16 +78,85 @@ void error(const __FlashStringHelper*err) {
   while (1);
 }
 
+// Select port on multiplexer
+void tca_select(uint8_t i) {
+  if(i > 7) return;
+
+  Wire.beginTransmission(TCAADDR);
+  Wire.write(1 << i);
+  Wire.endTransmission();
+}
+
+
 int8_t sensorsServiceId;
 uint8_t sensorsServiceUUID[] {0xfc, 0xed, 0x64, 0x08, 0xc0, 0x15, 0x45, 0xea, 0xb5, 0x0d, 0x1d, 0xe3, 0x2a, 0x1c, 0x2f, 0x6d};
-int8_t fingersCharId;
-uint8_t fingersCharUUID[] {0xfc, 0xed, 0x64, 0x09, 0xc0, 0x15, 0x45, 0xea, 0xb5, 0x0d, 0x1d, 0xe3, 0x2a, 0x1c, 0x2f, 0x6d};
-int8_t gyroCharId;
-uint8_t gyroCharUUID[] {0xfc, 0xed, 0x64, 0x0a, 0xc0, 0x15, 0x45, 0xea, 0xb5, 0x0d, 0x1d, 0xe3, 0x2a, 0x1c, 0x2f, 0x6d};
-int8_t accelerometerCharId;
-uint8_t accelerometerCharUUID[] {0xfc, 0xed, 0x64, 0x0b, 0xc0, 0x15, 0x45, 0xea, 0xb5, 0x0d, 0x1d, 0xe3, 0x2a, 0x1c, 0x2f, 0x6d};
-int8_t magnetChatId;
-uint8_t magnetChatUUID[] {0xfc, 0xed, 0x64, 0x0c, 0xc0, 0x15, 0x45, 0xea, 0xb5, 0x0d, 0x1d, 0xe3, 0x2a, 0x1c, 0x2f, 0x6d};
+
+sensor allSensors[6];
+
+void generate_sensors_uuids(uint8_t serviceUUID[], sensor arr[]) 
+{
+  Serial.println("Generating UUIDs");
+  for(int i=0; i < 6; i++) 
+  {
+    sensor s;
+
+    memcpy(s.gyroUUID, serviceUUID, 16);
+    s.gyroUUID[3] += i * 0x03 + 0x01;
+    memcpy(s.accUUID, serviceUUID, 16);
+    s.accUUID[3] += i * 3 + 2;
+    memcpy(s.magUUID, serviceUUID, 16);
+    s.magUUID[3] += i * 3 + 3;
+
+    arr[i] = s;
+  }
+}
+
+void init_characteristics(sensor arr[]) 
+{
+  for(int i = 0; i < 6; i++) 
+  {
+    Serial.print("Sensor "); Serial.println(i);
+    
+    Serial.println("- adding gyro characteristic");
+    arr[i].gyroId = gatt.addCharacteristic(arr[i].gyroUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
+    if(arr[i].gyroId == 0)
+    {
+      error(F("Failed"));
+    }
+    Serial.println("- adding accelerometer characteristic");
+    arr[i].accId = gatt.addCharacteristic(arr[i].accUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
+    if(arr[i].accId == 0)
+    {
+      error(F("Failed"));
+    }
+    Serial.println("- adding magnetometer characteristic");
+    arr[i].magId = gatt.addCharacteristic(arr[i].magUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
+    if(arr[i].magId == 0)
+    {
+      error(F("Failed"));
+    }
+  }
+}
+
+void read_finger(uint8_t port, sensor *s) {
+  tca_select(port);
+
+  compass.read();
+  gyro.read();
+  snprintf(report_gyro, sizeof(report_gyro), "%d %d %d",
+    gyro.g.x, gyro.g.y, gyro.g.z);
+  snprintf(report_accelerometer, sizeof(report_accelerometer), "%d %d %d",
+    gyro.a.x, gyro.a.y, gyro.a.z);
+  snprintf(report_magnet, sizeof(report_magnet), "%d %d %d",
+    compass.m.x, compass.m.y, compass.m.z);
+
+  Serial.println(report_gyro);
+
+  gatt.setChar(s->gyroId, report_gyro);
+  gatt.setChar(s->accId, report_accelerometer);
+  gatt.setChar(s->magId, report_magnet);
+
+}
 
 // GATT service setup
 void setup_gatt()
@@ -71,6 +164,9 @@ void setup_gatt()
   ble.setInterCharWriteDelay(5);
 
   ble.atcommand("AT+GAPDEVNAME=Gestus[R]");
+  ble.atcommand("AT+GATTCLEAR");
+
+  generate_sensors_uuids(sensorsServiceUUID, allSensors);
 
   Serial.println("Adding sensors service");
   sensorsServiceId = gatt.addService(sensorsServiceUUID);
@@ -80,34 +176,9 @@ void setup_gatt()
     ble.atcommand("AT+GATTLIST");
     error(F("Failed to create sensors service "));
   }
+  ble.atcommand("AT+GATTLIST");
 
-  Serial.println("Adding fingers characteristic");
-  fingersCharId = gatt.addCharacteristic(fingersCharUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
-  if(fingersCharId == 0)
-  {
-    error(F("Failed to create fingers characteristic"));
-  }
-
-  Serial.println("Adding gyroscope characteristic");
-  gyroCharId = gatt.addCharacteristic(gyroCharUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
-  if(gyroCharId == 0)
-  {
-    error(F("Failed to create gyroscope characteristic"));
-  }
-
-  Serial.println("Adding accelerometer characteristic");
-  accelerometerCharId = gatt.addCharacteristic(accelerometerCharUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
-  if(accelerometerCharId == 0)
-  {
-    error(F("Failed to create accelerometer characteristic"));
-  }
-
-  Serial.println("Adding magnetometer characteristic");
-  magnetChatId = gatt.addCharacteristic(magnetChatUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
-  if(magnetChatId == 0)
-  {
-    error(F("Failed to create magnetometer characteristic"));
-  }
+  init_characteristics(allSensors);
 
   // Serial.println("Adding sensors service UUID to the advertising payload");
   // uint8_t advdata[] { 0x02, 0x01, 0x06, 0x11, 0x06, 0x6d, 0x2f, 0x1c, 0x2a, 0xe3, 0x1d, 0x0d, 0xb5, 0xea, 0x45, 0x15, 0xc0, 0x08, 0x64, 0xfc };
@@ -160,18 +231,29 @@ void setup(void)
     setup_gatt();
   }
 
+  //init multiplexer
+  tca_select(0);
+
+
   //init compas data
   Wire.begin();
+
+  
+  /*if (!compass.init())
+  {
+    Serial.println("Failed to autodetect compass type!");
+    while (1);
+  }*/
   compass.init();
   compass.enableDefault();
 
   //init gyro data
-  if (!gyro.init())
+  /*if (!gyro.init())
   {
     Serial.println("Failed to autodetect gyro type!");
     while (1);
-  }
-
+  }*/
+  gyro.init();
   gyro.enableDefault();
 
   Serial.println(F("Adafruit Bluefruit Command <-> Data Mode Example"));
@@ -200,6 +282,7 @@ void setup(void)
   ble.setMode(BLUEFRUIT_MODE_DATA);
 
   Serial.println(F("******************************"));
+
 }
 
 /**************************************************************************/
@@ -207,15 +290,21 @@ void setup(void)
     @brief  Constantly poll for new command or response data
 */
 /**************************************************************************/
+
 void loop(void)
 {
+  /*
   //read and organize compas data
   compass.read();
   gyro.read();
-  snprintf(report_gyro_and_compass, sizeof(report_gyro_and_compass), "%d %d %d %d %d %d %d %d %d %d",
-    compass.a.x, compass.a.y, compass.a.z,
-    compass.m.x, compass.m.y, compass.m.z,
-    gyro.g.x, gyro.g.y, gyro.g.z, 5);
+
+  
+  x = ToRad(gyro.g.x);
+  y = ToRad(gyro.g.y);
+  z = ToRad(gyro.g.z);
+  dtostrf(x, 6, 3, strx);
+  dtostrf(y, 6, 3, stry);
+  dtostrf(z, 6, 3, strz);
 
   snprintf(report_gyro, sizeof(report_gyro), "%d %d %d",
     gyro.g.x, gyro.g.y, gyro.g.z);
@@ -229,21 +318,12 @@ void loop(void)
   gatt.setChar(magnetChatId, report_magnet);
 
    //A, M, gyro
-  Serial.println(report_gyro_and_compass);
   //ble.print(report_gyro_and_compass);//put data in bluetooth stream
-  delay(100);
+  //delay(100);
 
   // Echo received data
-  while ( ble.available() )
-  {
-    int c = ble.read();
-
-    Serial.print((char)c);
-
-    // Hex output too, helps w/debugging!
-    Serial.print(" [0x");
-    if (c <= 0xF) Serial.print(F("0"));
-    Serial.print(c, HEX);
-    Serial.print("] ");
+  */
+  for(uint8_t i = 0; i < 6; i++) {
+    read_finger(i, &allSensors[i]);  
   }
 }
