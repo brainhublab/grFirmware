@@ -21,17 +21,17 @@
 #include <LIS3MDL.h>
 
 /* define IMU sensors */
-LIS3MDL compass; //TODO need to be mag
-LSM6 gyro;
+//LIS3MDL compass; //TODO need to be mag
+//LSM6 gyro;
 
 
 //sensor sign
 int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1};
 
 //containers for data report TODO  move t to struct
-char report_gyro[20];
-char report_magnet[20];
-char report_accelerometer[20];
+//char report_gyro[20];
+//char report_magnet[20];
+//char report_accelerometer[20];
 
 //Some defines for gyroscope data
 #define GRAVITY 256  //this equivalent to 1G in the raw data coming from the accelerometer
@@ -96,7 +96,7 @@ sensor allSensors[6];
 void generate_sensors_uuids(uint8_t serviceUUID[], sensor arr[]) 
 {
   Serial.println("Generating UUIDs");
-  for(int i=0; i < 6; i++) 
+  for(uint8_t i=0; i < 6; i++) 
   {
     sensor s;
 
@@ -113,7 +113,7 @@ void generate_sensors_uuids(uint8_t serviceUUID[], sensor arr[])
 
 void init_characteristics(sensor arr[]) 
 {
-  for(int i = 0; i < 6; i++) 
+  for(uint8_t i = 0; i < 6; i++) 
   {
     Serial.print("Sensor "); Serial.println(i);
     
@@ -138,17 +138,34 @@ void init_characteristics(sensor arr[])
   }
 }
 
+void init_sensors(sensor arr[]) {
+  for(uint8_t i = 0; i < 6; i++) {
+    tca_select(i);
+    
+    arr[i].gyro.init();
+    arr[i].gyro.enableDefault();
+
+    arr[i].compass.init();
+    arr[i].compass.enableDefault();
+  }
+}
+
 void read_finger(uint8_t port, sensor *s) {
+  char report_gyro[20];
+  char report_magnet[20];
+  char report_accelerometer[20];
+  
   tca_select(port);
 
-  compass.read();
-  gyro.read();
+  s->compass.read();
+  s->gyro.read();
+  
   snprintf(report_gyro, sizeof(report_gyro), "%d %d %d",
-    gyro.g.x, gyro.g.y, gyro.g.z);
+    s->gyro.g.x, s->gyro.g.y, s->gyro.g.z);
   snprintf(report_accelerometer, sizeof(report_accelerometer), "%d %d %d",
-    gyro.a.x, gyro.a.y, gyro.a.z);
+    s->gyro.a.x, s->gyro.a.y, s->gyro.a.z);
   snprintf(report_magnet, sizeof(report_magnet), "%d %d %d",
-    compass.m.x, compass.m.y, compass.m.z);
+    s->compass.m.x, s->compass.m.y, s->compass.m.z);
 
   Serial.println(report_gyro);
 
@@ -243,18 +260,21 @@ void setup(void)
   {
     Serial.println("Failed to autodetect compass type!");
     while (1);
-  }*/
+  }
   compass.init();
   compass.enableDefault();
 
   //init gyro data
-  /*if (!gyro.init())
+  if (!gyro.init())
   {
     Serial.println("Failed to autodetect gyro type!");
     while (1);
-  }*/
+  }
   gyro.init();
   gyro.enableDefault();
+  */
+
+  init_sensors(allSensors);
 
   Serial.println(F("Adafruit Bluefruit Command <-> Data Mode Example"));
   Serial.println(F("------------------------------------------------"));

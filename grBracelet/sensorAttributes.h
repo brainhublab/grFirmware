@@ -10,8 +10,8 @@ struct sens
   uint8_t magUUID[16];
   uint8_t magId;
 
-  //LIS3MDL compass; //TODO need to be mag
-  //LSM6 gyro;
+  LIS3MDL compass; //TODO need to be mag
+  LSM6 gyro;
 };
 
 typedef sens sensor;
