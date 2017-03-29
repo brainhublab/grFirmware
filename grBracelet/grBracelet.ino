@@ -17,8 +17,8 @@
 
 /*including compas acclerometer and gyro */
 #include <Wire.h>
-#include <LSM6.h>
-#include <LIS3MDL.h>
+//#include <LSM6.h>
+//#include <LIS3MDL.h>
 
 /* define IMU sensors */
 //LIS3MDL compass; //TODO need to be mag
@@ -26,7 +26,7 @@
 
 
 //sensor sign
-int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1};
+//int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1};
 
 //containers for data report TODO  move t to struct
 //char report_gyro[20];
@@ -34,22 +34,22 @@ int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1};
 //char report_accelerometer[20];
 
 //Some defines for gyroscope data
-#define GRAVITY 256  //this equivalent to 1G in the raw data coming from the accelerometer
+//#define GRAVITY 256  //this equivalent to 1G in the raw data coming from the accelerometer
 
-#define ToRad(x) ((x)*0.01745329252)  // *pi/180
-#define ToDeg(x) ((x)*57.2957795131)  // *180/pi
+//#define ToRad(x) ((x)*0.01745329252)  // *pi/180
+//#define ToDeg(x) ((x)*57.2957795131)  // *180/pi
 
 #define TCAADDR 0x70
 
 // LSM303/LIS3MDL magnetometer calibration constants; use the Calibrate example from
 // the Pololu LSM303 or LIS3MDL library to find the right values for your board
 
-#define M_X_MIN -1000
-#define M_Y_MIN -1000
-#define M_Z_MIN -1000
-#define M_X_MAX +1000
-#define M_Y_MAX +1000
-#define M_Z_MAX +1000
+//#define M_X_MIN -1000
+//#define M_Y_MIN -1000
+//#define M_Z_MIN -1000
+//#define M_X_MAX +1000
+//#define M_Y_MAX +1000
+//#define M_Z_MAX +1000
 
 /*=========================================================================
     MINIMUM_FIRMWARE_VERSION  Minimum firmware version to have some new features
@@ -156,23 +156,39 @@ void read_finger(uint8_t port, sensor *s) {
   char report_accelerometer[20];
   
   tca_select(port);
+  delay(20);
+
+  //Serial.print("swithc to port: "); Serial.println(port);
 
   s->compass.read();
-  s->gyro.read();
-  
+  s->gyro.readGyro();
+  s->gyro.readAcc();
+
   snprintf(report_gyro, sizeof(report_gyro), "%d %d %d",
     s->gyro.g.x, s->gyro.g.y, s->gyro.g.z);
+  //Serial.print(port); Serial.print(" - ");
+  //Serial.println(report_gyro);
+  
   snprintf(report_accelerometer, sizeof(report_accelerometer), "%d %d %d",
     s->gyro.a.x, s->gyro.a.y, s->gyro.a.z);
+  //Serial.print(port); Serial.print(" - ");
+  //Serial.println(report_accelerometer);
+  
   snprintf(report_magnet, sizeof(report_magnet), "%d %d %d",
     s->compass.m.x, s->compass.m.y, s->compass.m.z);
-
-  Serial.println(report_gyro);
-
+  //Serial.print(port); Serial.print(" - ");
+  //Serial.println(report_magnet);
+   
   gatt.setChar(s->gyroId, report_gyro);
-  gatt.setChar(s->accId, report_accelerometer);
-  gatt.setChar(s->magId, report_magnet);
-
+ /* if(port == 0)
+  {
+  ble.print(F("AT+GATTCHAR="));
+  ble.print(s->gyroId);
+  ble.println(report_gyro);
+  }*/
+  //gatt.setChar(s->accId, report_accelerometer);
+  //gatt.setChar(s->magId, report_magnet);
+  
 }
 
 // GATT service setup
@@ -241,19 +257,16 @@ void setup(void)
   /* Print Bluefruit information */
   ble.info();
 
-  //ble.verbose(false);  // debug info is a little annoying after this point!
+ ble.verbose(true);  // debug info is a little annoying after this point!
 
   if ( GATT_RUN_SETUP )
   {
     setup_gatt();
   }
 
-  //init multiplexer
-  tca_select(0);
-
-
   //init compas data
   Wire.begin();
+  //Wire.setClock(160);
 
   
   /*if (!compass.init())
@@ -283,8 +296,9 @@ void setup(void)
   Serial.print(F("Initialising the Bluefruit LE module: "));
 
   /* Wait for connection */
-  while (! ble.isConnected()) {
+  while (!ble.isConnected()) {
       delay(500);
+      Serial.println("fuck");
   }
 
   Serial.println(F("******************************"));

@@ -52,13 +52,4 @@
 
 //==================================
 
-struct sensor {
-  uint8_t gyroUUID[16];
-  uint8_t gyroId;
-  uint8_t accUUID[16];
-  uint8_t accId;
-  uint8_t magUUID[16];
-  uint8_t magId;
-};
-
 //=================================

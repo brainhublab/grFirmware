@@ -70,7 +70,7 @@ void setup_gatt()
 {
   ble.setInterCharWriteDelay(5);
 
-  ble.atcommand("AT+GAPDEVNAME=Gestus[L]");
+  ble.atcommand("AT+GAPDEVNAME=Gestus[R]");
 
   Serial.println("Adding sensors service");
   sensorsServiceId = gatt.addService(sensorsServiceUUID);
@@ -212,10 +212,10 @@ void loop(void)
   //read and organize compas data
   compass.read();
   gyro.read();
-  snprintf(report_gyro_and_compass, sizeof(report_gyro_and_compass), "%d %d %d %d %d %d %d %d %d %d",
+  /*snprintf(report_gyro_and_compass, sizeof(report_gyro_and_compass), "%d %d %d %d %d %d %d %d %d %d",
     compass.a.x, compass.a.y, compass.a.z,
     compass.m.x, compass.m.y, compass.m.z,
-    gyro.g.x, gyro.g.y, gyro.g.z, 5);
+    gyro.g.x, gyro.g.y, gyro.g.z, 5);*/
 
   snprintf(report_gyro, sizeof(report_gyro), "%d %d %d",
     gyro.g.x, gyro.g.y, gyro.g.z);
@@ -229,21 +229,10 @@ void loop(void)
   gatt.setChar(magnetChatId, report_magnet);
 
    //A, M, gyro
-  Serial.println(report_gyro_and_compass);
+  //Serial.println(report_gyro_and_compass);
   //ble.print(report_gyro_and_compass);//put data in bluetooth stream
   delay(100);
 
   // Echo received data
-  while ( ble.available() )
-  {
-    int c = ble.read();
 
-    Serial.print((char)c);
-
-    // Hex output too, helps w/debugging!
-    Serial.print(" [0x");
-    if (c <= 0xF) Serial.print(F("0"));
-    Serial.print(c, HEX);
-    Serial.print("] ");
-  }
 }
