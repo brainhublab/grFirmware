@@ -27,6 +27,13 @@ void Read_Gyro(uint8_t i) {
   SENSORS[i].AN[1] = gyro_acc.g.y;
   SENSORS[i].AN[2] = gyro_acc.g.z;
 
+  Serial.print(SENSORS[i].AN[0]);
+  Serial.print(" ");
+  Serial.print(SENSORS[i].AN[1]);
+  Serial.print(" ");
+  Serial.print(SENSORS[i].AN[2]);
+  Serial.println();
+
   SENSORS[i].gyro_x = SENSOR_SIGN[0] * (SENSORS[i].AN[0] - SENSORS[i].AN_OFFSET[0]);
   SENSORS[i].gyro_y = SENSOR_SIGN[1] * (SENSORS[i].AN[1] - SENSORS[i].AN_OFFSET[1]);
   SENSORS[i].gyro_z = SENSOR_SIGN[2] * (SENSORS[i].AN[2] - SENSORS[i].AN_OFFSET[2]);
@@ -42,9 +49,9 @@ void Accel_Init() {
 void Read_Accel(uint8_t i) {
   gyro_acc.readAcc();
 
-  SENSORS[i].AN[3] = gyro_acc.a.x >> 4; // shift left 4 bits to use 12-bit representation (1 g = 256)
-  SENSORS[i].AN[4] = gyro_acc.a.y >> 4;
-  SENSORS[i].AN[5] = gyro_acc.a.z >> 4;
+  SENSORS[i].AN[3] = gyro_acc.a.x;// >> 4; // shift left 4 bits to use 12-bit representation (1 g = 256)
+  SENSORS[i].AN[4] = gyro_acc.a.y;// >> 4;
+  SENSORS[i].AN[5] = gyro_acc.a.z; //>> 4;
 
   SENSORS[i].accel_x = SENSOR_SIGN[3] * (SENSORS[i].AN[3] - SENSORS[i].AN_OFFSET[3]);
   SENSORS[i].accel_y = SENSOR_SIGN[4] * (SENSORS[i].AN[4] - SENSORS[i].AN_OFFSET[4]);

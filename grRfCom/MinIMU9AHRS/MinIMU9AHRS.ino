@@ -1,6 +1,6 @@
 #include "sensor.h"
 #include <Wire.h>
-
+#include <SoftwareSerial.h>
 // Uncomment the below line to use this axis definition:
    // X axis pointing forward
    // Y axis pointing to the right
@@ -8,7 +8,7 @@
 // Positive pitch : nose up
 // Positive roll : right wing down
 // Positive yaw : clockwise
-int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
+int SENSOR_SIGN[9] = {1,1,-1,-1,-1,1,1,1,1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
 // Uncomment the below line to use this axis definition:
    // X axis pointing forward
    // Y axis pointing to the left
@@ -24,10 +24,15 @@ int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1}; //Correct directions x,y,z - gyro, 
 // 3.9 mg/digit; 1 g = 256
 #define GRAVITY 256 //this equivalent to 1G in the raw data coming from the accelerometer
 
+#define ToRad(x) ((x)*0.01745329252)  // *pi/180
+#define ToDeg(x) ((x)*57.2957795131)  // *180/pi
+
 #define STATUS_LED 13
 
 #define SENSORS_N 6
 #define TCAADDR 0x70
+
+SoftwareSerial bSerial(9, 10);
 
 float G_Dt=0.02;    // Integration time (DCM algorithm)  We will run the integration loop at 50Hz if possible
 
@@ -36,43 +41,57 @@ sensor SENSORS[SENSORS_N];
 void setup()
 {
   Serial.begin(115200);
+  bSerial.begin(115200);
   pinMode (STATUS_LED,OUTPUT);  // Status LED
 
   I2C_Init();
 
-  Serial.println("Pololu MinIMU-9 + Arduino AHRS");
+  //Serial.println("Pololu MinIMU-9 + Arduino AHRS");
 
   digitalWrite(STATUS_LED,LOW);
   delay(1500);
 
-  Serial.println("Initing init :D");
-  for(uint8_t i=1; i<SENSORS_N; i++) {
+  //Serial.println("Initing init :D");
+  for(uint8_t i=0; i<SENSORS_N; i++) {
     TCA_Select(i);
 
-    Serial.println("acc");
+    //Serial.println("acc");
     Accel_Init();
-    Serial.println("mag");
+    //Serial.println("mag");
     Compass_Init();
-    Serial.println("gyro");
+    //Serial.println("gyro");
     Gyro_Init();
 
-    delay(20);
+    delay(200);
 
-    Serial.println("We will take some readings for a moment ;P");
-    for(uint8_t j=0; j<32; j++) {  // We take some readings...
+    //Serial.println("We will take some readings for a moment ;P");
+    for(uint8_t j=0; j<32; j++) 
+    {  // We take some readings...
       Read_Gyro(i);
       Read_Accel(i);
 
-      for(uint8_t y=0; y<6; y++) {  // Cumulate values
+      for(uint8_t y=0; y<6; y++) 
+      {  // Cumulate values
         SENSORS[i].AN_OFFSET[y] += SENSORS[i].AN[y];
       }
       delay(20);
     }
 
-    for(uint8_t y=0; y<6; y++) {
+    for(uint8_t y=0; y<6; y++)
+    {
       SENSORS[i].AN_OFFSET[y] = SENSORS[i].AN_OFFSET[y] / 32;
+      Serial.print(SENSORS[i].AN_OFFSET[y]);
+      Serial.print(" ");
+      
     }
-
+    Serial.println();
+    /*SENSORS[i].AN_OFFSET[0] = 67;
+    SENSORS[i].AN_OFFSET[1] = -73;
+    SENSORS[i].AN_OFFSET[2] = -60;
+    SENSORS[i].AN_OFFSET[3] = 3910;
+    SENSORS[i].AN_OFFSET[4] = -570;
+    SENSORS[i].AN_OFFSET[5] = 955;
+  */
     SENSORS[i].AN_OFFSET[5] -= GRAVITY * SENSOR_SIGN[5];
   }
 
@@ -90,7 +109,7 @@ void setup()
 
 void loop() //Main Loop
 {
-  for(uint8_t i=1; i<SENSORS_N; i++) {
+  for(uint8_t i=0; i<SENSORS_N; i++) {
     if((millis()-SENSORS[i].timer)>=20) {  // Main loop runs at 50Hz
       TCA_Select(i);
 
@@ -119,6 +138,8 @@ void loop() //Main Loop
       }
 
       printdata(i);
+     // delay(100);
+      
     }
   }
 }
