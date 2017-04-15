@@ -30,6 +30,7 @@ int SENSOR_SIGN[9] = {1,1,-1,-1,-1,1,1,1,1}; //Correct directions x,y,z - gyro, 
 #define STATUS_LED 13
 
 #define SENSORS_N 6
+#define SENSORS_INIT_PORT 0
 #define TCAADDR 0x70
 
 SoftwareSerial bSerial(9, 10);
@@ -99,7 +100,7 @@ void setup()
   digitalWrite(STATUS_LED,HIGH);
 
   Serial.println("Setting timers, almost there ;)");
-  for(uint8_t i=1; i<SENSORS_N; i++) {
+  for(uint8_t i=SENSORS_INIT_PORT; i<SENSORS_N + SENSORS_INIT_PORT; i++) {
     SENSORS[i].timer=millis();
     SENSORS[i].counter=0;
   }
