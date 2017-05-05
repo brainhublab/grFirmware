@@ -1,363 +1,156 @@
-/*include arduino libs*/
-#include <Arduino.h>
-#include <SPI.h>
-#if not defined (_VARIANT_ARDUINO_DUE_X_) && not defined (_VARIANT_ARDUINO_ZERO_)
-  #include <SoftwareSerial.h>
-#endif
-
-/*including bluetooth libs and config header*/
-#include "Adafruit_BLE.h"
-#include "Adafruit_BluefruitLE_SPI.h"
-#include "Adafruit_BluefruitLE_UART.h"
-#include "Adafruit_BLEGatt.h"
-#include "bluefruitConfig.h" // config header
-
-/*include gattAttributes header with gatt methods and structs */
-#include "sensorAttributes.h"
-
-/*including compas acclerometer and gyro */
+#include "sensor.h"
 #include <Wire.h>
-//#include <LSM6.h>
-//#include <LIS3MDL.h>
+#include <SoftwareSerial.h>
+// Uncomment the below line to use this axis definition:
+   // X axis pointing forward
+   // Y axis pointing to the right
+   // and Z axis pointing down.
+// Positive pitch : nose up
+// Positive roll : right wing down
+// Positive yaw : clockwise
+int SENSOR_SIGN[9] = {1,1,-1,-1,-1,1,1,1,1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
+int FINGER_SENSOR_SIGN[9] = {-1,-1,1,1,1,-1,-1,-1,-1};
+// Uncomment the below line to use this axis definition:
+   // X axis pointing forward
+   // Y axis pointing to the left
+   // and Z axis pointing up.
+// Positive pitch : nose down
+// Positive roll : right wing down
+// Positive yaw : counterclockwise
+//int SENSOR_SIGN[9] = {1,-1,-1,-1,1,1,1,-1,-1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
 
-/* define IMU sensors */
-//LIS3MDL compass; //TODO need to be mag
-//LSM6 gyro;
+// tested with Arduino Uno with ATmega328 and Arduino Duemilanove with ATMega168
 
+// accelerometer: 8 g sensitivity
+// 3.9 mg/digit; 1 g = 256
+#define GRAVITY 256 //this equivalent to 1G in the raw data coming from the accelerometer
 
-//sensor sign
-//int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1};
+#define ToRad(x) ((x)*0.01745329252)  // *pi/180
+#define ToDeg(x) ((x)*57.2957795131)  // *180/pi
 
-//containers for data report TODO  move t to struct
-//char report_gyro[20];
-//char report_magnet[20];
-//char report_accelerometer[20];
+#define STATUS_LED 13
 
-//Some defines for gyroscope data
-//#define GRAVITY 256  //this equivalent to 1G in the raw data coming from the accelerometer
-
-//#define ToRad(x) ((x)*0.01745329252)  // *pi/180
-//#define ToDeg(x) ((x)*57.2957795131)  // *180/pi
-
+#define SENSORS_N 6
+#define SENSORS_INIT_PORT 0
 #define TCAADDR 0x70
 
-// LSM303/LIS3MDL magnetometer calibration constants; use the Calibrate example from
-// the Pololu LSM303 or LIS3MDL library to find the right values for your board
+SoftwareSerial bSerial(9, 10);
 
-//#define M_X_MIN -1000
-//#define M_Y_MIN -1000
-//#define M_Z_MIN -1000
-//#define M_X_MAX +1000
-//#define M_Y_MAX +1000
-//#define M_Z_MAX +1000
+float G_Dt=0.02;    // Integration time (DCM algorithm)  We will run the integration loop at 50Hz if possible
 
-/*=========================================================================
-    MINIMUM_FIRMWARE_VERSION  Minimum firmware version to have some new features
-    MODE_LED_BEHAVIOUR        LED activity, valid options are
-                              "DISABLE" or "MODE" or "BLEUART" or
-                              "HWUART"  or "SPI"  or "MANUAL"
-    -----------------------------------------------------------------------*/
-    #define FACTORYRESET_ENABLE         0 //sometimes needs to chage
-    // #define GAPDEVNAME "[R]_SERMO_"
-    #define MINIMUM_FIRMWARE_VERSION    "0.6.6"
-    #define MODE_LED_BEHAVIOUR          "MODE"
-/*=========================================================================*/
+sensor SENSORS[SENSORS_N];
 
-// Create the bluefruit object, either software serial...uncomment these lines
-
-SoftwareSerial bluefruitSS = SoftwareSerial(BLUEFRUIT_SWUART_TXD_PIN, BLUEFRUIT_SWUART_RXD_PIN);
-
-Adafruit_BluefruitLE_UART ble(bluefruitSS, BLUEFRUIT_UART_MODE_PIN,
-                      BLUEFRUIT_UART_CTS_PIN, BLUEFRUIT_UART_RTS_PIN);
-
-Adafruit_BLEGatt gatt(ble);
-
-// A small helper
-void error(const __FlashStringHelper*err) {
-  Serial.println(err);
-  while (1);
-}
-
-// Select port on multiplexer
-void tca_select(uint8_t i) {
-  if(i > 7) return;
-
-  Wire.beginTransmission(TCAADDR);
-  Wire.write(1 << i);
-  Wire.endTransmission();
-}
-
-
-int8_t sensorsServiceId;
-uint8_t sensorsServiceUUID[] {0xfc, 0xed, 0x64, 0x08, 0xc0, 0x15, 0x45, 0xea, 0xb5, 0x0d, 0x1d, 0xe3, 0x2a, 0x1c, 0x2f, 0x6d};
-
-sensor allSensors[6];
-
-void generate_sensors_uuids(uint8_t serviceUUID[], sensor arr[]) 
+void setup()
 {
-  Serial.println("Generating UUIDs");
-  for(uint8_t i=0; i < 6; i++) 
-  {
-    sensor s;
-
-    memcpy(s.gyroUUID, serviceUUID, 16);
-    s.gyroUUID[3] += i * 0x03 + 0x01;
-    memcpy(s.accUUID, serviceUUID, 16);
-    s.accUUID[3] += i * 3 + 2;
-    memcpy(s.magUUID, serviceUUID, 16);
-    s.magUUID[3] += i * 3 + 3;
-
-    arr[i] = s;
-  }
-}
-
-void init_characteristics(sensor arr[]) 
-{
-  for(uint8_t i = 0; i < 6; i++) 
-  {
-    Serial.print("Sensor "); Serial.println(i);
-    
-    Serial.println("- adding gyro characteristic");
-    arr[i].gyroId = gatt.addCharacteristic(arr[i].gyroUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
-    if(arr[i].gyroId == 0)
-    {
-      error(F("Failed"));
-    }
-    Serial.println("- adding accelerometer characteristic");
-    arr[i].accId = gatt.addCharacteristic(arr[i].accUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
-    if(arr[i].accId == 0)
-    {
-      error(F("Failed"));
-    }
-    Serial.println("- adding magnetometer characteristic");
-    arr[i].magId = gatt.addCharacteristic(arr[i].magUUID, GATT_CHARS_PROPERTIES_READ, 1, 20, BLE_DATATYPE_STRING);
-    if(arr[i].magId == 0)
-    {
-      error(F("Failed"));
-    }
-  }
-}
-
-void init_sensors(sensor arr[]) {
-  for(uint8_t i = 0; i < 6; i++) {
-    tca_select(i);
-    
-    arr[i].gyro.init();
-    arr[i].gyro.enableDefault();
-
-    arr[i].compass.init();
-    arr[i].compass.enableDefault();
-  }
-}
-
-void read_finger(uint8_t port, sensor *s) {
-  char report_gyro[20];
-  char report_magnet[20];
-  char report_accelerometer[20];
-  
-  tca_select(port);
-  delay(20);
-
-  //Serial.print("swithc to port: "); Serial.println(port);
-
-  s->compass.read();
-  s->gyro.readGyro();
-  s->gyro.readAcc();
-
-  snprintf(report_gyro, sizeof(report_gyro), "%d %d %d",
-    s->gyro.g.x, s->gyro.g.y, s->gyro.g.z);
-  //Serial.print(port); Serial.print(" - ");
-  //Serial.println(report_gyro);
-  
-  snprintf(report_accelerometer, sizeof(report_accelerometer), "%d %d %d",
-    s->gyro.a.x, s->gyro.a.y, s->gyro.a.z);
-  //Serial.print(port); Serial.print(" - ");
-  //Serial.println(report_accelerometer);
-  
-  snprintf(report_magnet, sizeof(report_magnet), "%d %d %d",
-    s->compass.m.x, s->compass.m.y, s->compass.m.z);
-  //Serial.print(port); Serial.print(" - ");
-  //Serial.println(report_magnet);
-   
-  gatt.setChar(s->gyroId, report_gyro);
- /* if(port == 0)
-  {
-  ble.print(F("AT+GATTCHAR="));
-  ble.print(s->gyroId);
-  ble.println(report_gyro);
-  }*/
-  //gatt.setChar(s->accId, report_accelerometer);
-  //gatt.setChar(s->magId, report_magnet);
-  
-}
-
-// GATT service setup
-void setup_gatt()
-{
-  ble.setInterCharWriteDelay(5);
-
-  ble.atcommand("AT+GAPDEVNAME=Gestus[R]");
-  ble.atcommand("AT+GATTCLEAR");
-
-  generate_sensors_uuids(sensorsServiceUUID, allSensors);
-
-  Serial.println("Adding sensors service");
-  sensorsServiceId = gatt.addService(sensorsServiceUUID);
-  if(sensorsServiceId == 0)
-  {
-    Serial.println(sensorsServiceId);
-    ble.atcommand("AT+GATTLIST");
-    error(F("Failed to create sensors service "));
-  }
-  ble.atcommand("AT+GATTLIST");
-
-  init_characteristics(allSensors);
-
-  // Serial.println("Adding sensors service UUID to the advertising payload");
-  // uint8_t advdata[] { 0x02, 0x01, 0x06, 0x11, 0x06, 0x6d, 0x2f, 0x1c, 0x2a, 0xe3, 0x1d, 0x0d, 0xb5, 0xea, 0x45, 0x15, 0xc0, 0x08, 0x64, 0xfc };
-  // ble.setAdvData(advdata, sizeof(advdata));
-
-  Serial.println("Performing SW reset (service changes require reset)");
-  ble.reset();
-}
-
-/**************************************************************************/
-/*!
-    @brief  Sets up the HW an the BLE module (this function is called
-            automatically on startup)
-*/
-/**************************************************************************/
-void setup(void)
-{
-  while (!Serial);  // required for Flora & Micro
-  delay(500);
   Serial.begin(115200);
+  bSerial.begin(115200);
+  pinMode (STATUS_LED,OUTPUT);  // Status LED
 
-  randomSeed(micros());
+  I2C_Init();
 
-  if ( !ble.begin(VERBOSE_MODE) )
+  //Serial.println("Pololu MinIMU-9 + Arduino AHRS");
+
+  digitalWrite(STATUS_LED,LOW);
+  delay(1500);
+
+  //Serial.println("Initing init :D");
+  for(uint8_t i=0; i<SENSORS_N; i++) {
+    TCA_Select(i);
+
+    //Serial.println("acc");
+    Accel_Init();
+    //Serial.println("mag");
+    Compass_Init();
+    //Serial.println("gyro");
+    Gyro_Init();
+
+    delay(200);
+
+    //Serial.println("We will take some readings for a moment ;P");
+    for(uint8_t j=0; j<32; j++) 
+    {  // We take some readings...
+      Read_Gyro(i);
+      Read_Accel(i);
+
+      for(uint8_t y=0; y<6; y++) 
+      {  // Cumulate values
+        SENSORS[i].AN_OFFSET[y] += SENSORS[i].AN[y];
+      }
+      delay(40);
+    }
+
+    for(uint8_t y=0; y<6; y++)
+    {
+      SENSORS[i].AN_OFFSET[y] = SENSORS[i].AN_OFFSET[y] / 32;
+      Serial.print(SENSORS[i].AN_OFFSET[y]);
+      Serial.print(" ");
+      
+    }
+    Serial.println();
+    /*SENSORS[i].AN_OFFSET[0] = 67;
+    SENSORS[i].AN_OFFSET[1] = -73;
+    SENSORS[i].AN_OFFSET[2] = -60;
+    SENSORS[i].AN_OFFSET[3] = 3910;
+    SENSORS[i].AN_OFFSET[4] = -570;
+    SENSORS[i].AN_OFFSET[5] = 955;
+    
+  */
+  if(i==5)
   {
-    error(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+    SENSORS[i].AN_OFFSET[5] -= GRAVITY * SENSOR_SIGN[5];
   }
-  Serial.println( F("OK!") );
-
-  if ( FACTORYRESET_ENABLE )
+  else
   {
-    /* Perform a factory reset to make sure everything is in a known state */
-    Serial.println(F("Performing a factory reset: "));
-    if ( ! ble.factoryReset() ){
-      error(F("Couldn't factory reset"));
+    SENSORS[i].AN_OFFSET[5] -= GRAVITY * FINGER_SENSOR_SIGN[5];
+ 
     }
   }
 
-  /* Disable command echo from Bluefruit */
-  ble.echo(false);
+  delay(2000);
+  digitalWrite(STATUS_LED,HIGH);
 
-  Serial.println("Requesting Bluefruit info:");
-  /* Print Bluefruit information */
-  ble.info();
-
- ble.verbose(true);  // debug info is a little annoying after this point!
-
-  if ( GATT_RUN_SETUP )
-  {
-    setup_gatt();
+  Serial.println("Setting timers, almost there ;)");
+  for(uint8_t i=SENSORS_INIT_PORT; i<SENSORS_N + SENSORS_INIT_PORT; i++) {
+    SENSORS[i].timer=millis();
+    SENSORS[i].counter=0;
   }
 
-  //init compas data
-  Wire.begin();
-  //Wire.setClock(160);
-
-  
-  /*if (!compass.init())
-  {
-    Serial.println("Failed to autodetect compass type!");
-    while (1);
-  }
-  compass.init();
-  compass.enableDefault();
-
-  //init gyro data
-  if (!gyro.init())
-  {
-    Serial.println("Failed to autodetect gyro type!");
-    while (1);
-  }
-  gyro.init();
-  gyro.enableDefault();
-  */
-
-  init_sensors(allSensors);
-
-  Serial.println(F("Adafruit Bluefruit Command <-> Data Mode Example"));
-  Serial.println(F("------------------------------------------------"));
-
-  /* Initialise the module */
-  Serial.print(F("Initialising the Bluefruit LE module: "));
-
-  /* Wait for connection */
-  while (!ble.isConnected()) {
-      delay(500);
-      Serial.println("fuck");
-  }
-
-  Serial.println(F("******************************"));
-
-  // LED Activity command is only supported from 0.6.6
-  if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) )
-  {
-    // Change Mode LED Activity
-    Serial.println(F("Change LED activity to " MODE_LED_BEHAVIOUR));
-    ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
-  }
-
-  // Set module to DATA mode
-  Serial.println( F("Switching to DATA mode!") );
-  ble.setMode(BLUEFRUIT_MODE_DATA);
-
-  Serial.println(F("******************************"));
-
+  delay(20);
 }
 
-/**************************************************************************/
-/*!
-    @brief  Constantly poll for new command or response data
-*/
-/**************************************************************************/
-
-void loop(void)
+void loop() //Main Loop
 {
-  /*
-  //read and organize compas data
-  compass.read();
-  gyro.read();
+  for(uint8_t i=0; i<SENSORS_N; i++) {
+    if((millis()-SENSORS[i].timer)>=20) {  // Main loop runs at 50Hz
+      TCA_Select(i);
 
-  
-  x = ToRad(gyro.g.x);
-  y = ToRad(gyro.g.y);
-  z = ToRad(gyro.g.z);
-  dtostrf(x, 6, 3, strx);
-  dtostrf(y, 6, 3, stry);
-  dtostrf(z, 6, 3, strz);
+      SENSORS[i].counter++;
+      SENSORS[i].timer_old = SENSORS[i].timer;
+      SENSORS[i].timer=millis();
 
-  snprintf(report_gyro, sizeof(report_gyro), "%d %d %d",
-    gyro.g.x, gyro.g.y, gyro.g.z);
-  snprintf(report_accelerometer, sizeof(report_accelerometer), "%d %d %d",
-    compass.a.x, compass.a.y, compass.a.z);
-  snprintf(report_magnet, sizeof(report_magnet), "%d %d %d",
-    compass.m.x, compass.m.y, compass.m.z);
+      if (SENSORS[i].timer>SENSORS[i].timer_old) {
+        G_Dt = (SENSORS[i].timer-SENSORS[i].timer_old)/1000.0;    // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
 
-  gatt.setChar(gyroCharId, report_gyro);
-  gatt.setChar(accelerometerCharId, report_accelerometer);
-  gatt.setChar(magnetChatId, report_magnet);
+        if (G_Dt > 0.2) {
+          G_Dt = 0; // ignore integration times over 200 ms
+        }
+      } else {
+        G_Dt = 0;
+      }
 
-   //A, M, gyro
-  //ble.print(report_gyro_and_compass);//put data in bluetooth stream
-  //delay(100);
+      // Data adquisition
+      Read_Gyro(i);   // This read gyro data
+      Read_Accel(i);     // Read I2C accelerometer
 
-  // Echo received data
-  */
-  for(uint8_t i = 0; i < 6; i++) {
-    read_finger(i, &allSensors[i]);  
+      if (SENSORS[i].counter > 5)  // Read compass data at 10Hz... (5 loop runs)
+      {
+        SENSORS[i].counter=0;
+        Read_Compass(i);    // Read I2C magnetometer
+      }
+
+      printdata(i);
+     // delay(100);
+      
+    }
   }
 }
