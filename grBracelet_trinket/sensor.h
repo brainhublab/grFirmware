@@ -1,11 +1,9 @@
 struct sensor {
-  //int counter=0;
-  long timer=0;
-  //long timer_old;
-
-  int AN[6];
-  int AN_OFFSET[6]={0, 0, 0, 0, 0, 0};
-
+  unsigned long timestamp;
+  int A_AN[6];
+  int A_AN_OFFSET[6]={0, 0, 0, 0, 0, 0};
+  int G_AN[6];
+  int G_AN_OFFSET[6]={0, 0, 0, 0, 0, 0};
   int gyro_x;
   int gyro_y;
   int gyro_z;
