@@ -2,42 +2,24 @@
 #include <Wire.h>
 #include <SoftwareSerial.h>
 #define STATUS_LED 13
+#define chargePin 5
 #define SENSORS_N 6
 #define SENSORS_INIT_PORT 0
 #define TCAADDR 0x70
 
-//KALMAN VARS
-float varVolt = 25.4125;  // среднее отклонение (ищем в excel)
-float varProcess = 0.05; // скорость реакции на изменение (подбирается вручную)
-float Pc = 0.0;
-float G = 0.0;
-float P = 1.0;
-float Xp = 0.0;
-float Zp = 0.0;
-float Xe = 0.0;
-// переменные для калмана
-
-float filter(float val) {  //функция фильтрации
-  Pc = P + varProcess;
-  G = Pc/(Pc + varVolt);
-  P = (1-G)*Pc;
-  Xp = Xe;
-  Zp = Xp;
-  Xe = G*(val-Zp)+Xp; // "фильтрованное" значение
-  return(Xe);
-}
-
 int SENSOR_SIGN[9] = {1, 1, -1, -1, -1, 1, 1, 1, 1};
 int FINGER_SENSOR_SIGN[9] = { -1, 1, 1, 1, -1, -1, -1, 1, -1};
 sensor SENSORS[SENSORS_N];
-SoftwareSerial bSerial(9, 10);
+SoftwareSerial bSerial(4, 3);
 void setup()
 {
   bSerial.begin(115200);
- // Serial.begin(115200);
-  
+  Serial.begin(115200);
   pinMode (STATUS_LED, OUTPUT);
+  pinMode(chargePin, OUTPUT);
+  digitalWrite(chargePin, HIGH);
   I2C_Init();
+
   digitalWrite(STATUS_LED, LOW);
   delay(2000);
   for (uint8_t i = 0; i < SENSORS_N; i++)
@@ -75,9 +57,13 @@ void setup()
   delay(2000);
   digitalWrite(STATUS_LED, HIGH);
   delay(20);
+
+
+
 }
 void loop()
 {
+   
   for (uint8_t i = 0; i < SENSORS_N; i++)
   {
     TCA_Select(i);

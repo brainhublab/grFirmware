@@ -42,7 +42,7 @@ void Read_Gyro(uint8_t i) {
 void Accel_Init() {
   gyro_acc.init();
   gyro_acc.enableDefault();
-  gyro_acc.writeReg(LSM6::CTRL1_XL, 0xA0); // 52 Hz, 8 g full scale A0 for 2G
+  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 52 Hz, 8 g full scale A0 for 2G
 }
 
 void Read_Accel(uint8_t i) {
