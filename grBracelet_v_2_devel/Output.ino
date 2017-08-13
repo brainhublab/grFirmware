@@ -4,18 +4,17 @@ void printdata(uint8_t i)
   {
   //  bSerial.print(i);
     Serial.print("$");
-    Serial.print(SENSORS[i].accel_x);
+    Serial.print(SENSORS[i].accel_x / 256.0);
       Serial.print(" ");
-    Serial.print(filter(SENSORS[i].accel_x));
-    Serial.print(";");
-   /*/ Serial.print("$");
-    Serial.print(SENSORS[i].accel_y);
+   // Serial.print(filter(SENSORS[i].accel_x));
+   // Serial.print(";");
+    //bSerial.print("$");
+    Serial.print(SENSORS[i].accel_y  / 256.0);
     Serial.print(" ");
    // Serial.print("$");
-    Serial.print(SENSORS[i].accel_z);
-    Serial.print(";");
-    */
-    /*
+    Serial.print(SENSORS[i].accel_z  / 256.0);
+    Serial.print('\n');
+    
     bSerial.print(SENSORS[i].accel_x);
     bSerial.print (" ");
     bSerial.print(SENSORS[i].accel_y);
@@ -30,10 +29,10 @@ void printdata(uint8_t i)
     bSerial.print(" ");
     bSerial.print(SENSORS[i].timestamp);
     bSerial.print('\n');
-    */
+    
   }
   else
-  {/*
+  {
     bSerial.print(i);
     bSerial.print(" ");
     bSerial.print(SENSORS[i].gyro_z*0); // y
@@ -56,6 +55,6 @@ void printdata(uint8_t i)
     bSerial.print(" ");
     bSerial.print(SENSORS[i].timestamp);
     bSerial.print('\n');
-    */
+    
   }
 }
