@@ -7,10 +7,12 @@
 #define SENSORS_INIT_PORT 0
 #define TCAADDR 0x70
 
-int SENSOR_SIGN[9] = {1, 1, -1, -1, -1, 1, 1, 1, 1};
+//int SENSOR_SIGN[9] = {1, 1, -1, -1, -1, 1, 1, 1, 1};
+int SENSOR_SIGN[9] = {1, 1, -1, 1, 1, -1, 1, 1, 1};
+
 int FINGER_SENSOR_SIGN[9] = { -1, 1, 1, 1, -1, -1, -1, 1, -1};
 sensor SENSORS[SENSORS_N];
-SoftwareSerial bSerial(4, 3);
+SoftwareSerial bSerial(9, 10);
 void setup()
 {
   bSerial.begin(115200);

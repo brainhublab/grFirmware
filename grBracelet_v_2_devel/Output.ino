@@ -2,24 +2,19 @@ void printdata(uint8_t i)
 {
   if(i==5)
   {
-  //  bSerial.print(i);
-    Serial.print("$");
-    Serial.print(SENSORS[i].accel_x / 256.0);
-      Serial.print(" ");
-   // Serial.print(filter(SENSORS[i].accel_x));
-   // Serial.print(";");
-    //bSerial.print("$");
-    Serial.print(SENSORS[i].accel_y  / 256.0);
-    Serial.print(" ");
-   // Serial.print("$");
-    Serial.print(SENSORS[i].accel_z  / 256.0);
-    Serial.print('\n');
-    
-    bSerial.print(SENSORS[i].accel_x);
-    bSerial.print (" ");
-    bSerial.print(SENSORS[i].accel_y);
-    bSerial.print (" ");
-    bSerial.print(SENSORS[i].accel_z);
+    bSerial.print(i);
+    bSerial.print(" ");
+    bSerial.print(SENSORS[i].gyro_x); // y
+    bSerial.print(" ");
+    bSerial.print(SENSORS[i].gyro_y); // z
+    bSerial.print(" ");
+    bSerial.print(SENSORS[i].gyro_z);
+    bSerial.print(" ");
+    bSerial.print(filter_x(SENSORS[i].accel_x) );
+    bSerial.print(" ");
+    bSerial.print(filter_y(SENSORS[i].accel_y)  );
+    bSerial.print(" ");
+    bSerial.print(filter_z(SENSORS[i].accel_z) );
     bSerial.print(" ");
     bSerial.print(SENSORS[i].magnetom_x);
     bSerial.print (" ");

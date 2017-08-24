@@ -1,5 +1,5 @@
 struct sensor {
-  unsigned long timestamp;
+  float timestamp;
   int A_AN[6];
   int A_AN_OFFSET[6]={0, 0, 0, 0, 0, 0};
   int G_AN[6];

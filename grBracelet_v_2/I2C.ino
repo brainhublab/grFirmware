@@ -42,19 +42,19 @@ void Read_Gyro(uint8_t i) {
 void Accel_Init() {
   gyro_acc.init();
   gyro_acc.enableDefault();
-  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 52 Hz, 8 g full scale A0 for 2G
+  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G
 }
 
 void Read_Accel(uint8_t i) {
   gyro_acc.readAcc();
-  SENSORS[i].A_AN[3] = gyro_acc.a.x;
-  SENSORS[i].A_AN[4] = gyro_acc.a.y;
-  SENSORS[i].A_AN[5] = gyro_acc.a.z;
+  SENSORS[i].A_AN[3] = gyro_acc.a.x >> 4;
+  SENSORS[i].A_AN[4] = gyro_acc.a.y >> 4;
+  SENSORS[i].A_AN[5] = gyro_acc.a.z >> 4;
   if (i == 5)
   {
-    SENSORS[i].accel_x = SENSOR_SIGN[3] * (SENSORS[i].A_AN[3] - SENSORS[i].A_AN_OFFSET[3]);
-    SENSORS[i].accel_y = SENSOR_SIGN[4] * (SENSORS[i].A_AN[4] - SENSORS[i].A_AN_OFFSET[4]);
-    SENSORS[i].accel_z = SENSOR_SIGN[5] * (SENSORS[i].A_AN[5] - SENSORS[i].A_AN_OFFSET[5]);
+    SENSORS[i].accel_x = SENSOR_SIGN[3] * (SENSORS[i].A_AN[3]);// - SENSORS[i].A_AN_OFFSET[3]);
+    SENSORS[i].accel_y = SENSOR_SIGN[4] * (SENSORS[i].A_AN[4]);// - SENSORS[i].A_AN_OFFSET[4]);
+    SENSORS[i].accel_z = SENSOR_SIGN[5] * (SENSORS[i].A_AN[5]);// - SENSORS[i].A_AN_OFFSET[5]);
   }
   else
   {

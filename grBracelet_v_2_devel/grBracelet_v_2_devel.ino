@@ -7,29 +7,68 @@
 #define SENSORS_INIT_PORT 0
 #define TCAADDR 0x70
 
-int SENSOR_SIGN[9] = {1, 1, -1, -1, -1, 1, 1, 1, 1};
+//int SENSOR_SIGN[9] = {1, 1, -1, -1, -1, 1, 1, 1, 1};
+int SENSOR_SIGN[9] = {1, 1, -1, 1, 1, -1, 1, 1, 1};
 int FINGER_SENSOR_SIGN[9] = { -1, 1, 1, 1, -1, -1, -1, 1, -1};
 sensor SENSORS[SENSORS_N];
-SoftwareSerial bSerial(4, 3);
+SoftwareSerial bSerial(9, 10);
 
 // переменные для калмана
-float varVolt = 50.2368536610182;  // среднее отклонение (ищем в excel)
-float varProcess = 1.0; // скорость реакции на изменение (подбирается вручную)process noise
-float Pc = 0.0;
-float G = 0.0;
-float P = 1.0;
-float Xp = 0.0;
-float Zp = 0.0;
-float Xe = 0.0;
+float varVolt_x = 1.51455586395835;// 50.23;  // среднее отклонение (ищем в excel)
+float varProcess_x = 0.5; // скорость реакции на изменение (подбирается вручную)process noise
+float Pc_x = 0.0;
+float G_x = 0.0;
+float P_x = 1.0;
+float Xp_x = 0.0;
+float Zp_x = 0.0;
+float Xe_x = 0.0;
+//
+float varVolt_y = 0.721797032292015 ;// 50.23;  // среднее отклонение (ищем в excel)
+float varProcess_y = 0.5; // скорость реакции на изменение (подбирается вручную)process noise
+float Pc_y = 0.0;
+float G_y = 0.0;
+float P_y = 1.0;
+float Xp_y = 0.0;
+float Zp_y = 0.0;
+float Xe_y = 0.0;
+//
+float varVolt_z = 2.6898082531846;  // среднее отклонение (ищем в excel)
+float varProcess_z = 0.5; // скорость реакции на изменение (подбирается вручную)process noise
+float Pc_z = 0.0;
+float G_z = 0.0;
+float P_z = 1.0;
+float Xp_z = 0.0;
+float Zp_z = 0.0;
+float Xe_z = 0.0;
 
-float filter(float val) {  //функция фильтрации
-  Pc = P + varProcess;
-  G = Pc/(Pc + varVolt);
-  P = (1-G)*Pc;
-  Xp = Xe;
-  Zp = Xp;
-  Xe = G*(val-Zp)+Xp; // "фильтрованное" значение
-  return(Xe);
+float filter_x(float val_x) {  //функция фильтрации
+  Pc_x = P_x + varProcess_x;
+  G_x = Pc_x/(Pc_x + varVolt_x);
+  P_x = (1-G_x)*Pc_x;
+  Xp_x = Xe_x;
+  Zp_x = Xp_x;
+  Xe_x = G_x*(val_x-Zp_x)+Xp_x; // "фильтрованное" значение
+  return(Xe_x);
+}
+
+float filter_y(float val_y) {  //функция фильтрации
+  Pc_y = P_y + varProcess_y;
+  G_y = Pc_y/(Pc_y + varVolt_y);
+  P_y = (1-G_y)*Pc_y;
+  Xp_y = Xe_y;
+  Zp_y = Xp_y;
+  Xe_y = G_y*(val_y-Zp_y)+Xp_y; // "фильтрованное" значение
+  return(Xe_y);
+}
+
+float filter_z(float val_z) {  //функция фильтрации
+  Pc_z = P_z + varProcess_z;
+  G_z = Pc_z/(Pc_z + varVolt_z);
+  P_z = (1-G_z)*Pc_z;
+  Xp_z = Xe_z;
+  Zp_z = Xp_z;
+  Xe_z = G_z*(val_z-Zp_z)+Xp_z; // "фильтрованное" значение
+  return(Xe_z);
 }
 void setup()
 {

@@ -23,6 +23,7 @@ void printdata(uint8_t i)
     bSerial.print(SENSORS[i].magnetom_z);
     bSerial.print(" ");
     bSerial.print(SENSORS[i].timestamp);
+    //Serial.print('\n');
     bSerial.print('\n');
   }
   else
