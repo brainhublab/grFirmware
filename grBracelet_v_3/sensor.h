@@ -1,7 +1,6 @@
 struct sensor {
-  float timestamp;
+  unsigned long timestamp;
   int A_AN[3];
-  int A_AN_OFFSET[3]={0, 0, 0};
   int G_AN[3];
   int G_AN_OFFSET[3]={0, 0, 0};
   int gyro_x;
