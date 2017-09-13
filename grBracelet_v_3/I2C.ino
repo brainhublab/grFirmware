@@ -42,14 +42,14 @@ void Read_Gyro(uint8_t i) {
 void Accel_Init() {
   gyro_acc.init();
   gyro_acc.enableDefault();
-  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x40); // 3C 52 Hz, 8 g full scale A0 for 2G or 40
+  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G or 40
 }
 
 void Read_Accel(uint8_t i) {
   gyro_acc.readAcc();
-  SENSORS[i].A_AN[0] = gyro_acc.a.x;// >> 4;
-  SENSORS[i].A_AN[1] = gyro_acc.a.y;// >> 4;
-  SENSORS[i].A_AN[2] = gyro_acc.a.z;// >> 4;
+  SENSORS[i].A_AN[0] = gyro_acc.a.x >> 4;
+  SENSORS[i].A_AN[1] = gyro_acc.a.y >> 4;
+  SENSORS[i].A_AN[2] = gyro_acc.a.z >> 4;
   if (i == 5)
   {
     SENSORS[i].accel_x = SENSOR_SIGN[3] * (SENSORS[i].A_AN[0]);

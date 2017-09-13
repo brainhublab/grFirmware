@@ -7,7 +7,7 @@
 #define SENSORS_INIT_PORT 0
 #define TCAADDR 0x70
 
-const int SENSOR_SIGN[9] = {-1, -1, -1, -1, -1, -1, 1, 1, 1};
+const int SENSOR_SIGN[9] = {1, -1, -1, 1, -1, -1, 1, -1, -1};
 //int SENSOR_SIGN[9] = {1, 1, -1, 1, 1, -1, 1, 1, 1};
 
 const int FINGER_SENSOR_SIGN[9] = { -1, 1, 1, 1, -1, -1, -1, 1, -1};
@@ -26,7 +26,7 @@ void setup()
   I2C_Init();
 
   digitalWrite(STATUS_LED, LOW);
-  delay(2000);
+  delay(200);
 
   for (uint8_t i = 0; i < SENSORS_N; i++)
   {
@@ -37,7 +37,7 @@ void setup()
     Gyro_Init();
 
     digitalWrite(STATUS_LED, HIGH);
-    delay(400);
+    delay(200);
     digitalWrite(STATUS_LED, LOW);
 
     for (uint8_t j = 0; j < 32; j++)
@@ -53,6 +53,7 @@ void setup()
     {
       SENSORS[i].G_AN_OFFSET[y] = SENSORS[i].G_AN_OFFSET[y] / 32;
     }
+      Serial.print(i);
   }
 
   delay(200);
