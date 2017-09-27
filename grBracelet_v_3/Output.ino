@@ -22,7 +22,7 @@ void printdata(uint8_t i)
     bSerial.print (" ");
     bSerial.print(SENSORS[i].magnetom_z);
     bSerial.print(" ");
-    bSerial.print(SENSORS[i].timestamp);
+    bSerial.print(SENSORS[i].time_stamp);
     bSerial.print('\n');
   }
   else
@@ -47,7 +47,7 @@ void printdata(uint8_t i)
     bSerial.print (" ");
     bSerial.print(SENSORS[i].magnetom_y);
     bSerial.print(" ");
-    bSerial.print(SENSORS[i].timestamp);
+    bSerial.print(SENSORS[i].time_stamp);
     bSerial.print('\n');
   }
 }
