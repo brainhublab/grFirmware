@@ -8,9 +8,14 @@ extern "C" {
 
 
 #define STATUS_LED 13
+#define IR_LEDS 5
+#define LEDS_ON 6
 #define SENSORS_N 6
 #define SENSORS_INIT_PORT 0
 #define TCAADDR 0x70
+#define TIMER 50
+
+unsigned long current_time, last_time;
 
 bool finger_is_connected = false;
 bool connected_fingers_id[SENSORS_N] = {0, 0, 0, 0, 0, 0};
@@ -29,7 +34,9 @@ void setup()
 
   Serial.println("Begin...");
 
-  pinMode (STATUS_LED, OUTPUT);
+  pinMode(STATUS_LED, OUTPUT);
+  pinMode(IR_LEDS, OUTPUT);
+  pinMode(LEDS_ON, INPUT);
 
   I2C_Init();
 
@@ -87,11 +94,19 @@ void setup()
   delay(200);
   digitalWrite(STATUS_LED, HIGH);
   delay(20);
-
+  
 }
 void loop()
 {
 
+  //current_time = millis();
+ // Serial.println(current_time - last_time);
+ 
+  if(digitalRead(LEDS_ON) == HIGH && TIMER <= (current_time - last_time))
+  {
+    digitalWrite(IR_LEDS, HIGH);
+    last_time = current_time;
+    }
   for (uint8_t i = 0; i < SENSORS_N; i++)
   {
     if (connected_fingers_id[i])
@@ -103,7 +118,10 @@ void loop()
       Read_Compass(i);
 
       SENSORS[i].time_stamp = millis();
+      
       printdata(i);
     }
   }
+ digitalWrite(IR_LEDS, LOW);
+  
 }
