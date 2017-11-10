@@ -1,4 +1,4 @@
-struct sensor {
+struct IMU {
   unsigned long time_stamp;
   int A_AN[3];
   int G_AN[3];
