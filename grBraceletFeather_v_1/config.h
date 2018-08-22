@@ -2,7 +2,7 @@
 
 */
 #define LED 13 //let pin 
-#define BUTTON 0 //main button 
+#define BUTTON_PIN 0 //main button 
 #define LED_MARKERS 1 //led markers pin 
 //imu addres change triger pins
 #define PALM 5
@@ -13,7 +13,7 @@
 #define PINKY 12
 #define VBAT A7
 
-byte fingers[6] = {PINKY, RING, MIDDLE, INDEX, THUMB, PALM};
+byte sa0[6] = {PINKY, RING, MIDDLE, INDEX, THUMB, PALM};
 /*bluetooth
 
 */
@@ -36,5 +36,5 @@ byte fingers[6] = {PINKY, RING, MIDDLE, INDEX, THUMB, PALM};
 
 //vars
 #define SERIAL_VERBOSE_MODE 1
-String devName = "AT+GAPDEVNAME=GR[L]";
+String dev_name = "AT+GAPDEVNAME=GR[L]";
 #define ACTIVE_ADDR 0x6B

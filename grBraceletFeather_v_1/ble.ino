@@ -18,8 +18,7 @@ void initBLE()
       error(F("Couldn't factory reset"));
     }
     if (SET_ATTRIBUTES)
-    {
-      
+    { 
       setAttributes();
     }
  
@@ -64,11 +63,12 @@ bool BLEConnected()
 {
   if (ble.isConnected())
   {
+    conn_flag = true;
     return true;
   }
   else
   {
-    delay(200);
+    //delay(500);
     return false;
   }
 }
@@ -76,7 +76,7 @@ bool BLEConnected()
 void setAttributes()
 {
 
-  ble.sendCommandCheckOK(devName.c_str());
+  ble.sendCommandCheckOK(dev_name.c_str());
   ble.sendCommandCheckOK("AT+GATTCLEAR");
   ble.reset();
 }
