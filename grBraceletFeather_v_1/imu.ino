@@ -21,7 +21,7 @@ void checkIfIMUConnected(byte imuId)
 void sa0PinsInit()
 {
 
-  for (byte i = 0; i < IMUS_NUMBER; i++)
+  for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
 
     pinMode(sa0[i], OUTPUT);
@@ -29,7 +29,7 @@ void sa0PinsInit()
     Serial.println("pins init");
 
   }
-  for (byte i = 0; i < IMUS_NUMBER; i++)
+  for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
     digitalWrite(sa0[i], HIGH);
     checkIfIMUConnected(i);
@@ -44,24 +44,28 @@ void i2cInit()
   grPrint("i2cInit");
 }
 
-void switchIMU(byte imuId)
+void switchIMU(int8_t imuId)
 {
   //Serial.println("switch to imu id");
-  if (sa0[imuId - 1] == HIGH && imuId > 0)
+  if (imuId > 0)
   {
     digitalWrite(sa0[imuId - 1], LOW);
+  }
+  else if(imuId == 0)
+  {
+    digitalWrite(sa0[5], LOW); 
   }
   digitalWrite(sa0[imuId], HIGH);
 }
 
 void resetSa0()
 {
-  for (byte i = 0; i < IMUS_NUMBER; i++)
+  for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
-    if (sa0[i] == HIGH)
-    {
+   // if (digitalRead(sa0[i]) == HIGH)
+   // {
       digitalWrite(sa0[i], LOW);
-    }
+   // }
   }
 }
 
@@ -75,7 +79,7 @@ void gyroInit()
 {
 
   //gyro_acc.init(gyro_acc.device_auto, gyro_acc.sa0_high); //inited in acc
-  gyro_acc.writeReg(LSM6::CTRL2_G, 0x3C); // 104 Hz, 2000 dps full scale 4c
+  gyro_acc.writeReg(LSM6::CTRL2_G, 0x4C); // 104 Hz, 2000 dps full scale 4C and 52HZ 3C
 
 }
 
@@ -116,7 +120,7 @@ void accInit()
 
   gyro_acc.init(gyro_acc.device_auto, gyro_acc.sa0_high); //initializing
   gyro_acc.enableDefault(); //enable default flags for both type of data gyro and acc
-  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G or 40
+  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G or 40 may be neet on 104 HZ
 
 }
 
@@ -175,7 +179,7 @@ void magRead(byte imu_id) {
 void imuInit()
 {
 
-  for (byte i = 0; i < IMUS_NUMBER; i++)
+  for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
     if (connected_imu_ids[i])
     {
@@ -184,27 +188,27 @@ void imuInit()
       gyroInit();
       magInit();
     }
-    if (i == 5)
-    {
-      resetSa0(i);
-    }
+    //if (i == 5)
+    //{
+    resetSa0(i);
+    //}
   }
 }
 
 void calibrate()
 {
 
-  for (byte imu_id = 0; imu_id < IMUS_NUMBER; imu_id++)
+  for (int8_t imu_id = 0; imu_id < IMUS_NUMBER; imu_id++)
   {
-    analogWrite(LED, 240);
+    analogWrite(LED, 220);
     switchIMU(imu_id);
 
     if (connected_imu_ids[imu_id])
     {
-      for (byte calib_iter = 0; calib_iter < 32; calib_iter++ )
+      for (int8_t calib_iter = 0; calib_iter < 32; calib_iter++ )
       {
         grPrint("Callib iteration: ");
-       // grPrint(calib_iter);
+        // grPrint(calib_iter);
         gyroRead(imu_id);
         //delay(20);
 
@@ -228,25 +232,20 @@ void calibrate()
       resetSa0(imu_id);
     }
     analogWrite(LED, 0);
+    Serial.println("==============================||=============================||");
+    delay(20);
   }
 
 }
 
-void readIMU()
+
+
+
+void readIMU(int8_t i)
 {
-  for (byte i = 0; i < IMUS_NUMBER; i++)
-  {
-    if (connected_imu_ids[i])
-    {
-      switchIMU(i);
+ 
       gyroRead(i);
       accRead(i);
       magRead(i);
-      if (i == 5)
-      {
-        resetSa0(i);
-      }
-    }
-  }
-}
 
+}
