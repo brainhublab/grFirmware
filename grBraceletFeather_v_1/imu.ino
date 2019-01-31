@@ -243,9 +243,13 @@ void calibrate()
 
 void readIMU(int8_t i)
 {
- 
+  if(connected_imu_ids[i])
+  {
+    
       gyroRead(i);
       accRead(i);
       magRead(i);
+  }
+ 
 
 }

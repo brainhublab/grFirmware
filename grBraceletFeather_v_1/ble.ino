@@ -122,3 +122,23 @@ void setAttributes()
   ble.sendCommandCheckOK("AT+GATTCLEAR");
   ble.reset();
 }
+
+void bleRead()
+{
+   while ( ble.available() )
+  {
+    //uint8_t c =
+    int8_t c = (int8_t)ble.read();
+    if (c == SOH || c == EOT)
+    {
+      transmission = c;
+    }
+    if (c == BAT)
+    {
+      Serial.println("Battery check is trigered");
+      battery.update(getBattPercents());
+
+    }
+
+  }
+}
