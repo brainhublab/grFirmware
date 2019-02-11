@@ -8,7 +8,7 @@
 
 
 /*I2C bus */
-void checkIfIMUConnected(byte imuId)
+void checkIfIMUConnected(int8_t imuId)
 {
   Wire.beginTransmission(ACTIVE_ADDR);
   if (Wire.endTransmission() == 0)
@@ -47,29 +47,41 @@ void i2cInit()
 void switchIMU(int8_t imuId)
 {
   //Serial.println("switch to imu id");
+  /*if(imuId == 0)
+  {
+    digitalWrite(1, LOW);
+    digitalWrite(5, HIGH);
+  
+  }
+  else if(imuId == 4)
+  {
+    digitalWrite(5, LOW);
+    digitalWrite(1, HIGH);
+    
+  }*/
   if (imuId > 0)
   {
+    //Serial.print("IMU IS HIGEST THEN 0:  ");
+    //Serial.println(imuId);
     digitalWrite(sa0[imuId - 1], LOW);
   }
-  else if(imuId == 0)
+  else if (imuId == 0)
   {
-    digitalWrite(sa0[5], LOW); 
+    digitalWrite(sa0[5], LOW);
   }
   digitalWrite(sa0[imuId], HIGH);
+ 
 }
 
 void resetSa0()
 {
   for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
-   // if (digitalRead(sa0[i]) == HIGH)
-   // {
-      digitalWrite(sa0[i], LOW);
-   // }
+    digitalWrite(sa0[i], LOW);
   }
 }
 
-void resetSa0(byte imu_id)
+void resetSa0(int8_t imu_id)
 {
   digitalWrite(sa0[imu_id], LOW);
 }
@@ -77,14 +89,13 @@ void resetSa0(byte imu_id)
 /*initializing gyroscope*/
 void gyroInit()
 {
-
   //gyro_acc.init(gyro_acc.device_auto, gyro_acc.sa0_high); //inited in acc
   gyro_acc.writeReg(LSM6::CTRL2_G, 0x4C); // 104 Hz, 2000 dps full scale 4C and 52HZ 3C
 
 }
 
 /*reading data from gyroscope*/
-void gyroRead(byte imu_id)
+void gyroRead(int8_t imu_id)
 {
   gyro_acc.readGyro(); //make reading from IMU for reference LSM6.h
 
@@ -94,7 +105,7 @@ void gyroRead(byte imu_id)
   IMUS[imu_id].G_AN[2] = gyro_acc.g.z;
 
   /*make reading from gyroscope with offset extraction and IMU sign correction of orientation*/
-  if (imu_id == PALM_INDEX) //if its == 5 is palm index on multiplexer
+  if (imu_id == PALM_INDEX) //if its == palm index on multiplexer
   {
     IMUS[imu_id].gyro_x = IMU_SIGN[0] * (IMUS[imu_id].G_AN[0] - IMUS[imu_id].G_AN_OFFSET[0]);
     IMUS[imu_id].gyro_y = IMU_SIGN[1] * (IMUS[imu_id].G_AN[1] - IMUS[imu_id].G_AN_OFFSET[1]);
@@ -106,26 +117,22 @@ void gyroRead(byte imu_id)
     IMUS[imu_id].gyro_y = FINGER_IMU_SIGN[1] * (IMUS[imu_id].G_AN[1] - IMUS[imu_id].G_AN_OFFSET[1]);
     IMUS[imu_id].gyro_z = FINGER_IMU_SIGN[2] * (IMUS[imu_id].G_AN[2] - IMUS[imu_id].G_AN_OFFSET[2]);
   }
-  /*
-    if (imu_id == 5)
-    {
-    resetSa0(imu_id);
-    }
-  */
+
 }
 
 /*initialize accelerometer*/
 void accInit()
 {
 
-  gyro_acc.init(gyro_acc.device_auto, gyro_acc.sa0_high); //initializing
+ // gyro_acc.init(gyro_acc.device_auto, gyro_acc.sa0_high); //initializing
+ gyro_acc.init();
   gyro_acc.enableDefault(); //enable default flags for both type of data gyro and acc
   gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G or 40 may be neet on 104 HZ
 
 }
 
 /* make some readings from accelerometer */
-void accRead(byte imu_id) {
+void accRead(int8_t imu_id) {
   gyro_acc.readAcc();
   /* store readed data from imu with 4 bit shifting */
   IMUS[imu_id].A_AN[0] = gyro_acc.a.x >> 4;
@@ -158,7 +165,7 @@ void magInit()
 }
 
 //*magnetometer reading
-void magRead(byte imu_id) {
+void magRead(int8_t imu_id) {
   mag.read();
 
   if (imu_id == PALM_INDEX)
@@ -188,11 +195,8 @@ void imuInit()
       gyroInit();
       magInit();
     }
-    //if (i == 5)
-    //{
-    resetSa0(i);
-    //}
   }
+  resetSa0();//TODO check if need to reset sa0
 }
 
 void calibrate()
@@ -216,7 +220,7 @@ void calibrate()
         {
           IMUS[imu_id].G_AN_OFFSET[axsis_id] += IMUS[imu_id].G_AN[axsis_id];
         }
-        delay(20);
+        //delay(20);
       }
       /* extract average from acumulated values for generating offsets*/
       for (uint8_t axsis_id = 0; axsis_id < 3; axsis_id++)
@@ -227,10 +231,6 @@ void calibrate()
       //delay(60);
 
     }
-    if (imu_id == 5)
-    {
-      resetSa0(imu_id);
-    }
     analogWrite(LED, 0);
     Serial.println("==============================||=============================||");
     delay(20);
@@ -238,18 +238,46 @@ void calibrate()
 
 }
 
-
-
-
 void readIMU(int8_t i)
 {
-  if(connected_imu_ids[i])
+  if (connected_imu_ids[i])
   {
-    
-      gyroRead(i);
-      accRead(i);
-      magRead(i);
-  }
- 
 
+    gyroRead(i);
+    accRead(i);
+    magRead(i);
+  }
+
+
+}
+
+void updateFilter(int8_t imu_id)
+{
+  if (imu_id == 0)
+  {
+    IMUS[imu_id].m_filter.update(convertRawGyro(IMUS[imu_id].gyro_x), convertRawGyro(IMUS[imu_id].gyro_y), convertRawGyro(IMUS[imu_id].gyro_z),
+                                 convertRawAcceleration(IMUS[imu_id].acc_x), convertRawAcceleration(IMUS[imu_id].acc_y), convertRawAcceleration(IMUS[imu_id].acc_z),
+                                 (float)IMUS[imu_id].mag_x, (float)IMUS[imu_id].mag_y, (float)IMUS[imu_id].mag_z);
+
+  }
+  else
+  {
+    IMUS[imu_id].m_filter.update(convertRawGyro(IMUS[imu_id].gyro_x), convertRawGyro(IMUS[imu_id].gyro_y), convertRawGyro(IMUS[imu_id].gyro_z),
+                                 convertRawAcceleration(IMUS[imu_id].acc_x), convertRawAcceleration(IMUS[imu_id].acc_y), convertRawAcceleration(IMUS[imu_id].acc_z),
+                                 (float)IMUS[imu_id].mag_x, (float)IMUS[imu_id].mag_y, (float)IMUS[imu_id].mag_z);
+  }
+}
+
+void updateAngles(int8_t imu_id)
+{
+  roll = (int16_t)IMUS[imu_id].m_filter.getRoll();
+  pitch = (int16_t)IMUS[imu_id].m_filter.getPitch();
+  yaw = (int16_t)IMUS[imu_id].m_filter.getYaw();
+}
+int getRelativeAngle(float source, float compare)
+{
+  int sign = compare > source ? 1 : -1;
+  angle = compare - source;
+  K = -sign * PI * 2;
+  return (int)((abs(K + angle) < abs(angle)) ? K + angle : angle);
 }

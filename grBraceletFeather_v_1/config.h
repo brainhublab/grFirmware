@@ -5,15 +5,15 @@
 #define BUTTON_PIN 0 //main button 
 #define LED_MARKERS 1 //led markers pin 
 //imu addres change triger pins
-#define PALM 5 //5
-#define THUMB 6 //6
-#define INDEX 1 //1
-#define MIDDLE 10 //10
-#define RING 11 //11
-#define PINKY 12 //12
+int8_t PALM = 5; //5
+int8_t THUMB = 6; //6
+int8_t INDEX = 1; //1
+int8_t MIDDLE  = 10; //10
+int8_t RING  = 11; //11
+int8_t PINKY  = 12; //12
 #define VBAT A7
 
-byte sa0[6] = {PALM, PINKY, RING, MIDDLE, INDEX, THUMB};
+int8_t sa0[6] = {PALM, PINKY, RING, MIDDLE, INDEX, THUMB};
 /*bluetooth
 
 */
