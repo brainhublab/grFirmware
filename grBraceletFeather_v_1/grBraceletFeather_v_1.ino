@@ -4,7 +4,6 @@
 #include <LSM6.h> //pololu accelerometer and gyro lib
 #include <LIS3MDL.h> //magnetometer lib
 
-#include "Quaternion.h"
 
 //#include <ButtonEvents.h> //buttton lib --> https://github.com/fasteddy516/ButtonEvents
 #include "avdweb_Switch.h"
@@ -87,7 +86,8 @@ const int FINGER_IMU_SIGN[9] = { 1,-1,-1,-1,1,1,1,-1,-1}; //IMU sign for fingers
 IMU IMUS[IMUS_NUMBER]; //array from IMU for iterative call and read data
 
 //char output_data[20];
-uint8_t output_data [20] = { bit(0) };
+//uint8_t output_data [20] = { bit(0) };
+uint8_t output_data [108] = { bit(0) };
 
 uint8_t packet_data[19] = {bit(0)};
 
@@ -131,10 +131,6 @@ float hui  = 0.0f;
 ////////////////////////////////////////
 
 bool sign_arr[8] = {1, 1, 1, 1, 1, 1, 1, 1};
-
-//SOME QUATERNIONS
-Quaternion palmQ, indexQ;
-
 
 
 //some angle vars;
@@ -213,32 +209,29 @@ void loop()
 
 
    // if (connected_imu_ids[i])
-  //  {
+    //{
       switchIMU(i);
       // 3 ms
       readIMU(i);
       updateFilter(i);
       updateAngles(i);
       // Oms
-     generatePackage(i);
+     //generatePackage(i);
+   
       //ble.write(output_data, 20);
       //ble.flush();
       //delay(3000);
-  //  }
+   // }
 
   }
-
-
-
-  //ble.write(output_data, 20);
+  genPack();
+  ble.write(output_data, 108);
   //ble.flush();// delay(5);
-  gatt.setChar(sensorServiceId, output_data, 20);
+ // gatt.setChar(sensorServiceId, output_data, 108);
   end_timer = millis();
   unsigned long  tmp = end_timer - start_timer;
 
-/*
   Serial.print("------------------- ");
   Serial.println(tmp);
   Serial.println();
-*/
 }

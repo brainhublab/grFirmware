@@ -38,5 +38,5 @@ int8_t sa0[6] = {PALM, PINKY, RING, MIDDLE, INDEX, THUMB};
 
 //vars
 #define SERIAL_VERBOSE_MODE 1
-String dev_name = "AT+GAPDEVNAME=GR[L]";
+String dev_name = "AT+GAPDEVNAME=GR[DEV]";
 #define ACTIVE_ADDR 0x6B
