@@ -107,20 +107,3 @@ void drawArduino()
   translate(-20, 0, -180); // set position to other edge of Arduino box
   box(210, 20, 10); // draw other pin header as box
 }
-void drawArduino1()
-{
-  /* function contains shape(s) that are rotated with the IMU */
-  stroke(0, 90, 90); // set outline colour to darker teal
-  fill(0, 130, 130); // set fill colour to lighter teal
-  box(300, 10, 200); // draw Arduino board base shape
-/*
-  stroke(0); // set outline colour to black
-  fill(80); // set fill colour to dark grey
-
-  translate(60, -10, 90); // set position to edge of Arduino box
-  box(170, 20, 10); // draw pin header as box
-
-  translate(-20, 0, -180); // set position to other edge of Arduino box
-  box(210, 20, 10); // draw other pin header as box
-  */
-}

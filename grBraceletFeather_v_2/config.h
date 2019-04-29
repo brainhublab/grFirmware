@@ -19,18 +19,12 @@ int8_t sa0[6] = {PALM, PINKY, RING, MIDDLE, INDEX, THUMB};
 */
 #define BUFSIZE 160 //size of reading buffer 
 #define VERBOSE_MODE true //need for debuging
-
-#define BLUEFRUIT_UART_MODE_PIN        -1 // default is 12 set to -1 if unused
-
-//SPI settings
-#define BLUEFRUIT_SPI_CS  8
-#define BLUEFRUIT_SPI_IRQ 7
-#define BLUEFRUIT_SPI_RST 4    // Optional but recommended, set to -1 if unused
+//wifi defs
+#define SECRET_SSID "gr-ap"
+#define SECRET_PASS "agbdlcid"
 
 #define FACTORYRESET_ENABLE 1 //enable factory reset
 #define SET_ATTRIBUTES 1  //sett attributes line name and other
-#define MINIMUM_FIRMWARE_VERSION  "0.7.7"
-#define MODE_LED_BEHAVIOUR  "MODE"
 
 #define SOH 1
 #define EOT 4
