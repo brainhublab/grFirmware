@@ -1,19 +1,23 @@
 /*pins
 
 */
+#define CPU_HZ 48000000
+#define TIMER_PRESCALER_DIV 1024
+
+
 #define LED 13 //let pin 
 #define BUTTON_PIN 0 //main button 
-#define LED_MARKERS 1 //led markers pin 
+#define LED_MARKERS A0 //led markers pin 
 //imu addres change triger pins
-int8_t PALM = 5; //5
+int8_t PALM = 1; //5 
 int8_t THUMB = 6; //6
-int8_t INDEX = 1; //1
-int8_t MIDDLE  = 10; //10
-int8_t RING  = 11; //11
-int8_t PINKY  = 12; //12
+int8_t INDEX = 5; //1
+int8_t MIDDLE  = 11; //10
+int8_t RING  = 12; //11
+int8_t PINKY  = 10; //12
 #define VBAT A7
 
-int8_t sa0[6] = {PALM, PINKY, RING, MIDDLE, INDEX, THUMB};
+int8_t sa0[6] = { PINKY, RING, MIDDLE, INDEX, THUMB, PALM};
 /*bluetooth
 
 */
@@ -33,4 +37,5 @@ int8_t sa0[6] = {PALM, PINKY, RING, MIDDLE, INDEX, THUMB};
 //vars
 #define SERIAL_VERBOSE_MODE 1
 String dev_name = "AT+GAPDEVNAME=GR[DEV]";
-#define ACTIVE_ADDR 0x6B
+//#define ACTIVE_ADDR 0x6B
+byte ACTIVE_ADDR = 0x6B;

@@ -4,15 +4,15 @@
 #include <LSM6.h> //pololu accelerometer and gyro lib
 #include <LIS3MDL.h> //magnetometer lib
 #include <WiFi101.h>
-
-
-//#include <ButtonEvents.h> //buttton lib --> https://github.com/fasteddy516/ButtonEvents
+#include <WiFiUdp.h>
+#include <Adafruit_SleepyDog.h>
+//#include "LowPower.h"
+//#include "avdweb_VirtualDelay.h"
+//#include <AsyncDelay.h>
 #include "avdweb_Switch.h"
 
-#include "avdweb_Switch.h"
+//#include "OneButton.h"
 #include "math.h"
-
-
 #include "config.h"
 #include "imu.h"
 
@@ -46,28 +46,27 @@ int asd = 0;
   }
 */
 
-//objects
-/* ...hardware SPI, using SCK/MOSI/MISO hardware SPI pins and then user selected CS/IRQ/RST */
 
-//prepare services
-int8_t sensorServiceId;
-uint8_t sensorServiceUUID[] {0xfc, 0xed, 0x64, 0x08, 0xc0, 0x15, 0x45, 0xea, 0xb5, 0x0d, 0x1d, 0xe3, 0x2a, 0x1c, 0x2f, 0x6d};
+#define IMUS_NUMBER 6 //number of   S
+#define SENDING_DATA_TIMER_BOUND 6
+#define PALM_INDEX 0
+
+
+//objects
 
 LSM6 gyro_acc; //initialization of accelerometer and gyroscope vars
 LIS3MDL mag; //initialization of magnetometer
 
-Switch bttn = Switch(BUTTON_PIN);
-//ButtonEvents bttn;
-//////////////////////////////////////////////////
-#define IMUS_NUMBER 6 //number of   S
-#define SENDING_DATA_TIMER_BOUND 6
+WiFiServer server(23);
+WiFiClient client;
+//WiFiUDP Udp;
 
-#define PALM_INDEX 0
 
-unsigned long current_timer, conn_timer, temporary_timer, batt_timer, led_timer_rm, led_timer_lm, start_timer, end_timer; //timer needed for IR leds blinkin
+unsigned long current_timer,  led_timer_rm, led_timer_lm, start_timer, end_timer, onSessionTimer, oldOnSessionTimer; //timer needed for IR leds blinkin
 
 bool finger_is_connected = false; //flag to verify if current finger IMU is connected
 int8_t connected_imu_ids[IMUS_NUMBER] = {0, 0, 0, 0, 0, 0}; //boolean array conains values of connected IMU's
+int8_t disconnected_imu_ids[IMUS_NUMBER] = {0, 0, 0, 0, 0, 0};
 
 //const int IMU_SIGN[9] = {1, -1, -1, 1, -1, -1, 1, -1, -1};// IMU sign sets the palm IMU coordinate system to right coordinate system https://www.evl.uic.edu/ralph/508S98/coordinates.html
 //const int IMU_SIGN[9] = { -1, 1, 1, 1, -1, -1, -1, 1, -1}; //TMP
@@ -77,32 +76,33 @@ const int IMU_SIGN[9] = {1, -1, -1, -1, 1, 1, 1, -1, -1}; //TMP
 const int FINGER_IMU_SIGN[9] = { 1, -1, -1, -1, 1, 1, 1, -1, -1}; //IMU sign for fingers IMU's
 IMU IMUS[IMUS_NUMBER]; //array from IMU for iterative call and read data
 
-//char output_data[20];
+//char output_data[254];
 //uint8_t output_data [20] = { bit(0) };
-char output_data [120] = { bit(0) };
+uint8_t output_data [117] = { bit(0) }; //TODO use it for byte array sendign optimisation
+
 
 char imu_data[130] = {bit(0)};
 
-
-
 //short battStatus = 0;
 
+//led vars
 int8_t brightness = 0;    // how bright the LED is
 int8_t fade_amount = 40;    // how many points to fade the LED by
 int8_t fade_coef = 20;
 const short led_blink = 2000;
 int8_t led_state = 0;
 
-volatile int8_t state = LOW;
-
 bool conn_flag = false;
-int8_t transmission = 4;
-bool transmission_flag  = false;
 
-//int8_t old_batt_p = 0;
+//Battery vars
 uint8_t old_batt_val = 0;
-uint8_t cur_batt_val = 0;
+uint8_t currentBatteryLevel = 0;
 bool IMU_powered_on = false;
+unsigned long battTimer;
+uint16_t battMeasurePeriod = 60000;
+uint16_t maxBatteryVoltage = 4160;
+uint16_t minBatteryVoltage = 3000;
+
 
 //wifi vars
 char ssid[] = SECRET_SSID;        // your network SSID (name)
@@ -111,167 +111,243 @@ char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as k
 byte mac[6];                     // the MAC address of your Wifi shield
 
 int led =  LED_BUILTIN;
-bool getData = false;
+bool getDataFlag = false;
 
 String currentLine = "";
 
 int status = WL_IDLE_STATUS;
 
-WiFiServer server(23);
-WiFiClient client;
+//AsyncDelay delay_200ms;
+//AsyncDelay delay_20ms;
 
-////////////////////////////////////////
+Switch bttn = Switch(BUTTON_PIN);
+//OneButton buttn(BUTTON_PIN, true);
+bool isLEDOn = false;
 
-bool sign_arr[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+bool calibrationFlag = false;
+
+bool powerSaveMode = false;
+
+//WiFiClient client;
 
 void setup()
 {
-  pinMode(A1, OUTPUT);
-  digitalWrite(A1, LOW);
+  //pinMode(A1, OUTPUT);
+  //digitalWrite(A1, LOW);
+
+#ifdef USBCON
+  USBDevice.attach();
+#endif
+
+  //pinMode(20, INPUT_PULLUP); // and make SDA high i.e. send I2C STOP control.
+  //pinMode(21, INPUT_PULLUP);
 
   if (SERIAL_VERBOSE_MODE)
   {
     Serial.begin(115200);
   }
+  //Serial.begin(115200);
   pinMode(LED, OUTPUT);
-  // pinMode(INDEX, OUTPUT);
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, INPUT);
 
+  //setup wifi
   initWifi();
+  delay(2000);
+  //sa0PinsInit();
 
 
-  delay(200);
+  //setup imus
+  i2cInit();
+  sa0PinsInit();
+  for (int8_t i = 0; i < IMUS_NUMBER; i++)
+  {
+    digitalWrite(sa0[i], HIGH);
+    checkIfIMUConnected(i);
+    digitalWrite(sa0[i], LOW);
+  }
 
-  // i2cInit();
-  // sa0PinsInit();
-  //BLE init need to be at the end
-  // imuInit();
-  delay(100);
-  analogWrite(LED, 0);
-  delay(100);
+  imuInit();
+  calibrate();
 
-  // calibrate();
-
-  // resetSa0();
-
+  resetSa0();
+  //powerOnIMU();
   led_timer_rm = 0;
+  startTimer(40);
+
+  for (int8_t i = 0; i < IMUS_NUMBER; i++)
+  {
+    digitalWrite(sa0[i], HIGH);
+    checkIfIMUConnected(i);
+    digitalWrite(sa0[i], LOW);
+  }
 
 
+  for (int8_t i = 0; i < 6; i++)
+  {
+    Serial.println(connected_imu_ids[i]);
+  }
+
+  oldOnSessionTimer = 0;
+
+  //battery setup
+  currentBatteryLevel = getBattLevel();
+ /* attachInterrupt(BUTTON_PIN, buttonClick, CHANGE);
+  buttn.attachClick(click1);
+  buttn.attachDoubleClick(doubleclick1);
+  buttn.attachLongPressStart(longPress1);
+  */
 }
 
 void loop()
 {
+  //bttnTick();
+  // buttonClick();
+  if (millis() - battTimer >= battMeasurePeriod)
+  {
+    battTimer = millis();
+    updatePowerMode();
+    ledBlink();
+  }
 
-  WiFiClient client = server.available();   // listen for incoming clients
-
-
-  if (client)
-  { // if you get a client,
-    Serial.println("new client");           // print a message out the serial port
-    String currentLine = "";
-    int i = 0;// make a String to hold incoming data from the client
-
-    while (client.connected())
+  /*
+    //  getData();
+    for (int8_t i = 0; i < 6; i++)
     {
-      unsigned long start_timer = millis();
-      
-      // loop while the client's connected
-      if (client.available())
-      { // if there's bytes to read from the client,
-        char c = client.read();             // read a byte, then
-        Serial.write(c);                    // print it out the serial monitor
-        if (c == '\n') {                    // if the byte is a newline character
-          if (currentLine.length() == 0)
-          {
-            break;
-          }
-          else
-          { // if you got a newline, then clear currentLine:
-            currentLine = "";
-          }
+      // switchIMU(i);
+      checkIfIMUConnected(i);
+      switchIMU(i);
+      // checkIfIMUConnected(i);
+      readIMU(i);
+      // checkIfIMUConnected(i);
+
+        if (i == 5)
+        {
+        Serial.print("-|");
+        Serial.print(i);
+        Serial.print("|-");
+        Serial.print(IMUS[i].gyro_x);
+        Serial.print(" ");
+        Serial.print(IMUS[i].gyro_y);
+        Serial.print(" ");
+        Serial.print(IMUS[i].gyro_z);
+        Serial.print(" ");
+
+        Serial.print(IMUS[i].acc_x);
+        Serial.print(" ");
+        Serial.print(IMUS[i].acc_y);
+        Serial.print(" ");
+        Serial.println(IMUS[i].acc_z);
         }
-        else if (c != '\r')
-        { // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
-        }
 
-        // Check to see if the client request was "GET /H" or "GET /L":
-        if (currentLine.endsWith("ga")) {
-          digitalWrite(led, HIGH);
-          client.println("GR[L] 123456" );
-          digitalWrite(led, LOW);
-
-        }
-        if (currentLine.endsWith("gd")) {
-          digitalWrite(led, LOW);
-          getData = true;
-        }
-        if (currentLine.endsWith("sd")) {
-          digitalWrite(led, LOW);
-          Serial.println("Stop Reading");
-          getData = false;
-        }
-      }
-      if (getData)
-      {
-        //getting data
-        /* memset(output_data, 0, sizeof(output_data));
-          snprintf(output_data, sizeof(output_data), "%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
-                  1, 2, 3, 4, 5, 6, 7, 8, 9,
-                  1, 2, 3, 4, 5, 6, 7, 8, 9,
-                  1, 2, 3, 4, 5, 6, 7, 8, 9,
-                  1, 2, 3, 4, 5, 6, 7, 8, 9,
-                  1, 2, 3, 4, 5, 6, 7, 8, 9,
-                  1, 2, 3, 4, 5, 6, 7, 8, 9, i);
-
-          client.println(output_data);
-          //delay(1000);
-          i++;*/
-        generatePackage(0);
-        long sz = 0;
-        //output_data[0]=i;
-        sz = client.println(output_data);
-        //delay(1000);
-        // client.write(imu_data);
-         Serial.println(output_data);
-        i++;
-        delay(8);
-      }
-
-      end_timer = millis();
-      unsigned long  tmp = end_timer - start_timer;
-
-      Serial.print("------------------- ");
-      Serial.println(tmp);
-      Serial.println();
-
+    }*/
+  /*
+    for (int8_t i = 0; i < 6; i++)
+    {
+      //switchIMU(i);
+      //  checkIfIMUConnected(i);
+      //Serial.println(connected_imu_ids[i]);
+      Serial.print(connected_imu_ids[i]);
+      Serial.print(" |---| ");
+      Serial.print(disconnected_imu_ids[i]);
+      Serial.print("  <--->  ");
     }
-    // close the connection:
-    client.stop();
-    Serial.println("client disconnected");
+    Serial.println("=======================================");
+
+  */
+  //Serial.print(27,BYTE);   //Print "esc"
+
+  // Serial.print("------------------------------------------------------------------------");
+  //Serial.print(getBattVoltage());
+  // Serial.println((int8_t)getBattLevel());
+
+  if (status != WL_CONNECTED)
+  {
+    tryToConnect();
+    Serial.println("\nStarting connection to server...");
+  }
+  else
+  {
+    buttonClick();
+    //WiFiClient
+     client = server.available();   // listen for incoming clients
+    // Serial.println("---------------------------------------CLIENT WAIT");
+    if (client)
+    {
+      // if you get a client,
+      String currentLine = "";// make a String to hold incoming data from the client
+      while (client.connected())
+      {
+        buttonClick();
+        //Serial.println("------------------------------------------CLIENT CONNECTED");
+
+        if (millis() - battTimer >= battMeasurePeriod)
+        {
+          battTimer = millis();
+          currentBatteryLevel = getBattLevel();
+        }
+        //Serial.println("------------------------------------------CLIENT CONNECTED");
+
+
+        // loop while the client's connected
+        checkIncomingEvent(&client);
+        onSessionTimer = millis();
+        //start_timer = onSessionTimer;
+        if (getDataFlag && onSessionTimer - oldOnSessionTimer >= 25)
+        {
+          // Serial.print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>____");
+          // Serial.println(onSessionTimer - oldOnSessionTimer);
+          oldOnSessionTimer = onSessionTimer;
+          getData();
+          resetSa0();
+
+          generatePackage();
+          //client.println(output_data);
+          client.write(output_data, sizeof(output_data));
+          //    Serial.print("|---");
+          
+           /* Serial.print(IMUS[5].gyro_x);
+            Serial.print(" ");
+            Serial.print(IMUS[5].gyro_y);
+            Serial.print(" ");
+            Serial.print(IMUS[5].gyro_z);
+            Serial.print(" ");
+            */
+            Serial.print(IMUS[5].acc_x);
+            Serial.print(" ");
+            Serial.print(IMUS[5].acc_y);
+            Serial.print(" ");
+            Serial.print(IMUS[5].acc_z);
+            Serial.print(" ");
+            Serial.println();
+          
+          /* end_timer = millis();
+            unsigned long  tmp = end_timer - start_timer;
+            Serial.print("------------------- ");
+            Serial.println(tmp);
+            Serial.println();
+
+          */
+          /*
+                    for (int8_t i = 0; i < 6; i++)
+                    {
+                      //Serial.println(connected_imu_ids[i]);
+                      Serial.print(connected_imu_ids[i]);
+                      Serial.print(" |---| ");
+                      Serial.print(disconnected_imu_ids[i]);
+                      Serial.print("  <--->  ");
+                    }
+                    Serial.println("=======================================");
+          */
+
+        }
+
+
+      }
+      // close the connection:
+      client.stop();
+      Serial.println("client disconnected");
+    }
   }
 
 
-  /*
-    start_timer = millis();
-
-    //buttonClick();
-
-    for (int8_t i = 0; i < IMUS_NUMBER; i++)
-    {
-      //int8_t i = 5;
-
-
-      // if (connected_imu_ids[i])
-      //{
-      switchIMU(i);
-      // 3 ms
-      readIMU(i);
-
-
-    }
-    genPack();
-
-
-  */
 }

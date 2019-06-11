@@ -1,16 +1,32 @@
-float getBattVoltage()
+uint16_t getBattVoltage()
 {
-  float batVoltage = analogRead(VBAT); //read voltage
-  batVoltage *= 2; //it's devidet by to from resistor devider so multiply it
-  batVoltage *= 3.3; //multiplying to 3.3 this is the reference voltage
-
-  return (batVoltage /= 1024);// -= 2.55; //convert from analog read units to voltage and return
-
+  analogRead(VBAT);
+  delay(2);
+  return (uint16_t)analogRead(VBAT) * 2 * 3300 / 1024;
 }
+
+
+uint8_t getBattLevel()
+{
+  uint16_t voltage = getBattVoltage();
+  if (voltage <= minBatteryVoltage)
+  {
+    return 0;
+  }
+  else if (voltage >= maxBatteryVoltage)
+  {
+    return 100;
+  }
+  else
+  {
+    return mapBattary(voltage, minBatteryVoltage, maxBatteryVoltage);
+  }
+}
+
 
 bool isCriticalPower()
 {
-  if (getBattVoltage() <= 3.3)
+  if (getBattLevel() <= 20)
   {
     return true;
   }
@@ -26,53 +42,71 @@ bool eneterPowerSaveMode()
   return false;
 }
 
-float getBattPercents()
+
+void enterPowerSaveIMU()
 {
-  uint8_t bp = grMap(getBattVoltage(), 3.2, 4.2, 0.0, 100.0);
-  if (bp > 100)
+  for (int8_t imu_id = 0; imu_id < IMUS_NUMBER; imu_id++)
   {
-    bp = bp - (bp - 100);
+    resetSa0();
+    switchIMU(imu_id);
+    //disable acc
+    gyro_acc.writeReg(LSM6::CTRL1_XL, 0x0C); // disable
+    delay(20);
+
+    //disable gyro
+    gyro_acc.writeReg(LSM6::CTRL2_G, 0x0C); //disable
+    delay(20);
+    //disable mag
+    mag.writeReg(LIS3MDL::CTRL_REG3, 0x2); //disable
+    delay(20);
   }
-  return bp;
-}
 
-void powerOffIMU()
-{
-  //disable acc
-  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x0C); // disable
-  delay(20);
 
-  //disable gyro
-  gyro_acc.writeReg(LSM6::CTRL2_G, 0x0C); //disable
-  delay(20);
 
-  //disable mag
-  //mag.writeReg(LIS3MDL::CTRL_REG3, 0x2); //disable
   IMU_powered_on = false;
   grPrint("imu powered OFF");
 
 
 }
 
-void powerOnIMU()
+
+void exitPowerSaveIMU()
 {
-  //disable acc
-  gyro_acc.enableDefault(); //enable default flags for both type of data gyro and acc
-  gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G or 40 may be neet on 104 HZ
-  delay(20);
-  //disable gyro
-  gyro_acc.writeReg(LSM6::CTRL2_G, 0x3C); // 104 Hz, 2000 dps full scale 4C and 52HZ 3C
-  delay(20);
+  resetSa0();
+  imuInit();
+  /*
+    for (int8_t imu_id = 0; imu_id < IMUS_NUMBER; imu_id++)
+    {
+    resetSa0();
+    switchIMU(imu_id);
+    //disable acc
+    gyro_acc.init(LSM6::device_auto, LSM6::sa0_high);
+    gyro_acc.enableDefault(); //enable default flags for both type of data gyro and acc
+    gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G or 40 may be neet on 104 HZ
+    delay(20);
+    //disable gyro
+    gyro_acc.writeReg(LSM6::CTRL2_G, 0x4C); // 104 Hz, 2000 dps full scale 4C and 52HZ 3C
+    delay(20);
+    mag.enableDefault();
+    delay(20);
+    }
 
-  // mag.enableDefault();
-  delay(20);
 
-  IMU_powered_on = true;
-  grPrint("imu powered ON");
-
+    IMU_powered_on = true;
+    grPrint("imu powered ON");
+  */
 
 }
 
+void enterPowerSaveMcu()
+{
+
+}
+
+void exitPowerSaveMcu()
+{
+
+}
 bool braceletNotMoved()
 {
 
@@ -113,10 +147,9 @@ void ledLowBatteryMode()
   }
 
 }
-
 void ledBlink()
 {
-  if (getBattPercents() >= 20)
+  if (getBattLevel() >= 20)
   {
     ledRegularMode();
   }
@@ -126,7 +159,45 @@ void ledBlink()
   }
 }
 
-uint8_t grMap(float x, float in_min, float in_max, float out_min, float out_max)
+void updatePowerMode()
 {
-  return (uint8_t)((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
+  powerSaveMode = !powerSaveMode;
+  if (powerSaveMode)
+  {
+    enterPowerSaveIMU();
+    WiFi.maxLowPowerMode();
+    /* while (powerSaveMode)
+      {
+       analogWrite(LED, 0);
+        delay(3000);
+       //Watchdog.sleep(2000);
+       analogWrite(LED, 250);
+       //       buttonClick();
+       delay(60);
+      }*/
+
+
+
+  }
+  else
+  {
+    exitPowerSaveIMU();
+    // delay(20);
+    //  imuInit();
+    calibrate();
+    WiFi.noLowPowerMode();
+    //client.flush();
+    /*
+      #ifdef USBCON
+        USBDevice.attach();
+      #endif
+    */
+  }
+
+  //currentBatteryLevel = getBattLevel();
+}
+uint8_t mapBattary(uint16_t voltage, uint16_t minVoltage, uint16_t maxVoltage)
+{
+  uint8_t result = 105 - (105 / (1 + pow(1.724 * (voltage - minVoltage) / (maxVoltage - minVoltage), 5.5)));
+  return result >= 100 ? 100 : result;
 }
