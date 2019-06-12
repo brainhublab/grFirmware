@@ -1,7 +1,7 @@
 /*pins
 
 */
-#define CPU_HZ 48000000
+#define CPU_HZ 48000000000
 #define TIMER_PRESCALER_DIV 1024
 
 

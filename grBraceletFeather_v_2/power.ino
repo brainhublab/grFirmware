@@ -74,28 +74,6 @@ void exitPowerSaveIMU()
 {
   resetSa0();
   imuInit();
-  /*
-    for (int8_t imu_id = 0; imu_id < IMUS_NUMBER; imu_id++)
-    {
-    resetSa0();
-    switchIMU(imu_id);
-    //disable acc
-    gyro_acc.init(LSM6::device_auto, LSM6::sa0_high);
-    gyro_acc.enableDefault(); //enable default flags for both type of data gyro and acc
-    gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G or 40 may be neet on 104 HZ
-    delay(20);
-    //disable gyro
-    gyro_acc.writeReg(LSM6::CTRL2_G, 0x4C); // 104 Hz, 2000 dps full scale 4C and 52HZ 3C
-    delay(20);
-    mag.enableDefault();
-    delay(20);
-    }
-
-
-    IMU_powered_on = true;
-    grPrint("imu powered ON");
-  */
-
 }
 
 void enterPowerSaveMcu()
@@ -111,52 +89,124 @@ bool braceletNotMoved()
 {
 
 }
-
-void ledRegularMode()
+void ledOnConnection()
 {
-  // reverse the direction of the fading at the ends of the fade:
-  if (current_timer - led_timer_rm >= fade_coef)
+  current_timer = millis();
+  if (current_timer - led_timer_rm >= 10)
   {
+    Serial.println("-----------------------------ONCONNECTION");
     led_timer_rm = current_timer;
 
     analogWrite(LED, brightness);
     // change the brightness for next time through the loop:
-    brightness = brightness + fade_amount;
-    if (brightness <= 0 || brightness >= 220)
+    brightness = brightness + 5;
+    if (brightness >= 250)
     {
-      fade_amount = -fade_amount;
+      //fade_amount = -fade_amount;
+      brightness = 0;
+    }
+  }
+}
+void ledSessionMode()
+{
+  // reverse the direction of the fading at the ends of the fade:
+  current_timer = millis();
+  if (current_timer - led_timer_rm >= 40)
+  {
+    Serial.println("-----------------------------ONSESSIONMODE");
+    Serial.println(brightness);
+    Serial.println(fade_amount);
+    led_timer_rm = current_timer;
+
+    analogWrite(LED, brightness);
+    // change the brightness for next time through the loop:
+    brightness = brightness + abs(fade_amount);
+    if (brightness >= 250)
+    {
+      //fade_amount = -fade_amount;
+      brightness = 0;
+    }
+  }
+  //delay(30);
+
+}
+
+void ledWaitMode()
+{
+  // reverse the direction of the fading at the ends of the fade:
+
+  current_timer = millis();
+  if ((current_timer - led_timer_rm) >= 100)
+  {
+    led_timer_rm = current_timer;
+    Serial.println("-----------------------------ONWAITMODE");
+    Serial.println(brightness);
+    Serial.println(fade_amount);
+    analogWrite(LED, brightness);
+    // change the brightness for next time through the loop:
+    brightness += fade_amount;
+    if ((brightness == 0) || (brightness >= 140))
+    {
+      fade_amount *= -1;//-fade_amount;
     }
   }
   //delay(30);
 }
-void ledLowBatteryMode()
+void ledLowPowerMode()
 {
-  if (current_timer - led_timer_lm >= led_blink)//led_blink);
+  current_timer = millis();
+  if (current_timer - led_timer_lm >= 20)
   {
+    Serial.println("-----------------------------ONLOWPOWERMODE");
+
     led_timer_lm = current_timer;
 
-    if (led_state == 0)
+    analogWrite(LED, 0);
+    if (led_timer_lm - ledLongLow >= 3000)
     {
-      led_state = 220;
+      ledLongLow = led_timer_lm;
+      analogWrite(LED, 250);
     }
-    else
-    {
-      led_state = 0;
-    }
-    analogWrite(LED, led_state);
   }
+  /* current_timer = millis();
+    if (current_timer - led_timer_lm >= led_blink)//led_blink);
+    {
+     led_timer_lm = current_timer;
+
+     if (led_state == 0)
+     {
+       led_state = 220;
+     }
+     else
+     {
+       led_state = 0;
+     }
+     analogWrite(LED, led_state);
+  */
+  /* analogWrite(LED, 0);
+    delay(2000);
+    analogWrite(LED, 250);
+    delay(20);
+  */
+
 
 }
 void ledBlink()
 {
-  if (getBattLevel() >= 20)
+
+  if (sessionMode && !powerSaveMode)
   {
-    ledRegularMode();
+    ledSessionMode();
   }
-  else
+  else if (waitMode && !powerSaveMode)
   {
-    ledLowBatteryMode();
+    ledWaitMode();
   }
+  else if ((powerSaveMode && sessionMode) || (powerSaveMode && waitMode))
+  {
+    ledLowPowerMode();
+  }
+
 }
 
 void updatePowerMode()
@@ -166,17 +216,11 @@ void updatePowerMode()
   {
     enterPowerSaveIMU();
     WiFi.maxLowPowerMode();
-    /* while (powerSaveMode)
-      {
-       analogWrite(LED, 0);
-        delay(3000);
-       //Watchdog.sleep(2000);
-       analogWrite(LED, 250);
-       //       buttonClick();
-       delay(60);
-      }*/
-
-
+    if (waitMode && status == WL_CONNECTED)
+    {
+      WiFi.disconnect();
+      status = WL_IDLE_STATUS;
+    }
 
   }
   else
@@ -186,12 +230,7 @@ void updatePowerMode()
     //  imuInit();
     calibrate();
     WiFi.noLowPowerMode();
-    //client.flush();
-    /*
-      #ifdef USBCON
-        USBDevice.attach();
-      #endif
-    */
+
   }
 
   //currentBatteryLevel = getBattLevel();

@@ -5,10 +5,7 @@
 #include <LIS3MDL.h> //magnetometer lib
 #include <WiFi101.h>
 #include <WiFiUdp.h>
-#include <Adafruit_SleepyDog.h>
-//#include "LowPower.h"
-//#include "avdweb_VirtualDelay.h"
-//#include <AsyncDelay.h>
+
 #include "avdweb_Switch.h"
 
 //#include "OneButton.h"
@@ -86,8 +83,8 @@ char imu_data[130] = {bit(0)};
 //short battStatus = 0;
 
 //led vars
-int8_t brightness = 0;    // how bright the LED is
-int8_t fade_amount = 40;    // how many points to fade the LED by
+uint8_t brightness = 0;    // how bright the LED is
+int8_t fade_amount = 5;    // how many points to fade the LED by
 int8_t fade_coef = 20;
 const short led_blink = 2000;
 int8_t led_state = 0;
@@ -130,14 +127,18 @@ bool powerSaveMode = false;
 
 //WiFiClient client;
 
+unsigned long ledLongLow = 0;
+uint32_t sampleRate = 10;
+unsigned long tryConnectionTimer = 0;
+
+bool sessionMode = false;
+bool waitMode = true;
 void setup()
 {
   //pinMode(A1, OUTPUT);
   //digitalWrite(A1, LOW);
 
-#ifdef USBCON
-  USBDevice.attach();
-#endif
+
 
   //pinMode(20, INPUT_PULLUP); // and make SDA high i.e. send I2C STOP control.
   //pinMode(21, INPUT_PULLUP);
@@ -172,7 +173,10 @@ void setup()
   resetSa0();
   //powerOnIMU();
   led_timer_rm = 0;
-  startTimer(40);
+
+  //tcConfigure(sampleRate);
+  //tcStartCounter();
+ // startTimer(10);
 
   for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
@@ -191,163 +195,87 @@ void setup()
 
   //battery setup
   currentBatteryLevel = getBattLevel();
- /* attachInterrupt(BUTTON_PIN, buttonClick, CHANGE);
-  buttn.attachClick(click1);
-  buttn.attachDoubleClick(doubleclick1);
-  buttn.attachLongPressStart(longPress1);
+   attachInterrupt(BUTTON_PIN, buttonClick, FALLING);
+  /*  buttn.attachClick(click1);
+    buttn.attachDoubleClick(doubleclick1);
+    buttn.attachLongPressStart(longPress1);
   */
 }
 
 void loop()
 {
   //bttnTick();
-  // buttonClick();
+  buttonClick();
+  ledBlink();
   if (millis() - battTimer >= battMeasurePeriod)
   {
     battTimer = millis();
-    updatePowerMode();
+    // updatePowerMode();
     ledBlink();
   }
-
-  /*
-    //  getData();
-    for (int8_t i = 0; i < 6; i++)
+  if (sessionMode)
+  {
+    if (status != WL_CONNECTED)
     {
-      // switchIMU(i);
-      checkIfIMUConnected(i);
-      switchIMU(i);
-      // checkIfIMUConnected(i);
-      readIMU(i);
-      // checkIfIMUConnected(i);
-
-        if (i == 5)
-        {
-        Serial.print("-|");
-        Serial.print(i);
-        Serial.print("|-");
-        Serial.print(IMUS[i].gyro_x);
-        Serial.print(" ");
-        Serial.print(IMUS[i].gyro_y);
-        Serial.print(" ");
-        Serial.print(IMUS[i].gyro_z);
-        Serial.print(" ");
-
-        Serial.print(IMUS[i].acc_x);
-        Serial.print(" ");
-        Serial.print(IMUS[i].acc_y);
-        Serial.print(" ");
-        Serial.println(IMUS[i].acc_z);
-        }
-
-    }*/
-  /*
-    for (int8_t i = 0; i < 6; i++)
-    {
-      //switchIMU(i);
-      //  checkIfIMUConnected(i);
-      //Serial.println(connected_imu_ids[i]);
-      Serial.print(connected_imu_ids[i]);
-      Serial.print(" |---| ");
-      Serial.print(disconnected_imu_ids[i]);
-      Serial.print("  <--->  ");
+      tryToConnect();
+      Serial.println("\nStarting connection to server...");
     }
-    Serial.println("=======================================");
-
-  */
-  //Serial.print(27,BYTE);   //Print "esc"
-
-  // Serial.print("------------------------------------------------------------------------");
-  //Serial.print(getBattVoltage());
-  // Serial.println((int8_t)getBattLevel());
-
-  if (status != WL_CONNECTED)
-  {
-    tryToConnect();
-    Serial.println("\nStarting connection to server...");
-  }
-  else
-  {
-    buttonClick();
-    //WiFiClient
-     client = server.available();   // listen for incoming clients
-    // Serial.println("---------------------------------------CLIENT WAIT");
-    if (client)
+    else
     {
-      // if you get a client,
-      String currentLine = "";// make a String to hold incoming data from the client
-      while (client.connected())
+      buttonClick();
+      ledBlink();
+
+      //WiFiClient
+      client = server.available();   // listen for incoming clients
+      //Serial.print("---------------------------------------CLIENT WAIT");
+      //Serial.println();
+      if (client)
       {
-        buttonClick();
-        //Serial.println("------------------------------------------CLIENT CONNECTED");
-
-        if (millis() - battTimer >= battMeasurePeriod)
+        // if you get a client,
+        String currentLine = "";// make a String to hold incoming data from the client
+        while (client.connected())
         {
-          battTimer = millis();
-          currentBatteryLevel = getBattLevel();
-        }
-        //Serial.println("------------------------------------------CLIENT CONNECTED");
+          buttonClick();
+          ledBlink();
+          //Serial.println("------------------------------------------CLIENT CONNECTED");
 
+          if (millis() - battTimer >= battMeasurePeriod)
+          {
+            battTimer = millis();
+            currentBatteryLevel = getBattLevel();
+          }
+          //Serial.println("------------------------------------------CLIENT CONNECTED");
+          // loop while the client's connected
+          checkIncomingEvent(&client);
+          onSessionTimer = millis();
+          if (getDataFlag && onSessionTimer - oldOnSessionTimer >= 25)
+          {
+            // Serial.print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>____");
+            oldOnSessionTimer = onSessionTimer;
+            getData();
+            resetSa0();
 
-        // loop while the client's connected
-        checkIncomingEvent(&client);
-        onSessionTimer = millis();
-        //start_timer = onSessionTimer;
-        if (getDataFlag && onSessionTimer - oldOnSessionTimer >= 25)
-        {
-          // Serial.print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>____");
-          // Serial.println(onSessionTimer - oldOnSessionTimer);
-          oldOnSessionTimer = onSessionTimer;
-          getData();
-          resetSa0();
+            generatePackage();
+            //client.println(output_data);
+            client.write(output_data, sizeof(output_data));
 
-          generatePackage();
-          //client.println(output_data);
-          client.write(output_data, sizeof(output_data));
-          //    Serial.print("|---");
-          
-           /* Serial.print(IMUS[5].gyro_x);
-            Serial.print(" ");
-            Serial.print(IMUS[5].gyro_y);
-            Serial.print(" ");
-            Serial.print(IMUS[5].gyro_z);
-            Serial.print(" ");
-            */
-            Serial.print(IMUS[5].acc_x);
-            Serial.print(" ");
-            Serial.print(IMUS[5].acc_y);
-            Serial.print(" ");
-            Serial.print(IMUS[5].acc_z);
-            Serial.print(" ");
-            Serial.println();
-          
-          /* end_timer = millis();
-            unsigned long  tmp = end_timer - start_timer;
-            Serial.print("------------------- ");
-            Serial.println(tmp);
-            Serial.println();
-
-          */
-          /*
-                    for (int8_t i = 0; i < 6; i++)
-                    {
-                      //Serial.println(connected_imu_ids[i]);
-                      Serial.print(connected_imu_ids[i]);
-                      Serial.print(" |---| ");
-                      Serial.print(disconnected_imu_ids[i]);
-                      Serial.print("  <--->  ");
-                    }
-                    Serial.println("=======================================");
-          */
+          }
 
         }
-
-
+        // close the connection:
+        client.stop();
+        Serial.println("client disconnected");
       }
-      // close the connection:
-      client.stop();
-      Serial.println("client disconnected");
     }
   }
+  else if (waitMode)
+  {
+
+  }
+
+
+
+
 
 
 }

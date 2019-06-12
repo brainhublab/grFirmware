@@ -10,7 +10,7 @@ void initWifi()
     while (true);
   }
 
-
+  WiFi.maxLowPowerMode();
 
 }
 
@@ -24,66 +24,73 @@ void tryToConnect()
     status = WiFi.begin(ssid, pass);
 
     // wait 10 seconds for connection:
-    delay(10000);
+    unsigned long onConTimer = millis();
+    while (millis() - onConTimer <= 10000)
+    {
+      Serial.println(millis() - onConTimer );
+      ledOnConnection();
+    }
+    //   delay(10000);
   }
 
   server.begin();
   Serial.println("Connected to wifi");
 
   printWiFiStatus();
-  analogWrite(LED, 254);
+  //brightness = 0;
+  //analogWrite(LED, 250);
 }
 
 void checkIncomingEvent(WiFiClient* client)
 {
-   while(client->available()) //check for bugs if freeze change it to if statement
-        { // if there's bytes to read from the client,
-          char c = client->read();             // read a byte, then
-          Serial.write(c);                    // print it out the serial monitor
-          if (c == '\n') {                    // if the byte is a newline character
-            if (currentLine.length() == 0)
-            {
-              break;
-            }
-            else
-            { // if you got a newline, then clear currentLine:
-              currentLine = "";
-            }
-          }
-          else if (c != '\r')
-          { // if you got anything else but a carriage return character,
-            currentLine += c;      // add it to the end of the currentLine
-          }
+  while (client->available()) //check for bugs if freeze change it to if statement
+  { // if there's bytes to read from the client,
+    char c = client->read();             // read a byte, then
+    Serial.write(c);                    // print it out the serial monitor
+    if (c == '\n') {                    // if the byte is a newline character
+      if (currentLine.length() == 0)
+      {
+        break;
+      }
+      else
+      { // if you got a newline, then clear currentLine:
+        currentLine = "";
+      }
+    }
+    else if (c != '\r')
+    { // if you got anything else but a carriage return character,
+      currentLine += c;      // add it to the end of the currentLine
+    }
 
-          // Check to see if the client request was "ga" - get attributes, "gd" - get data, "sd" - stop data
-          if (currentLine.endsWith("ga"))
-          {
-            analogWrite(LED, 254);
-            client->println("GR[L] 123456" );
-            analogWrite(LED, 0);
+    // Check to see if the client request was "ga" - get attributes, "gd" - get data, "sd" - stop data
+    if (currentLine.endsWith("ga"))
+    {
+      // analogWrite(LED, 254);
+      client->println("GR[L] 123456" );
+      // analogWrite(LED, 0);
 
-          }
-          if (currentLine.endsWith("gd"))
-          {
-            analogWrite(LED, 0);
-            getDataFlag = true;
-          }
-          if (currentLine.endsWith("sd"))
-          {
-            digitalWrite(LED, LOW);
-            Serial.println("Stop Reading");
-            getDataFlag = false;
-          }
-          if(currentLine.endsWith("calib"))
-          {
-            calibrationFlag = true;
-          }
-          if(currentLine.endsWith("susp"))
-          {
-            powerSaveMode = true;
-          }
-          
-        }
+    }
+    if (currentLine.endsWith("gd"))
+    {
+      //analogWrite(LED, 0);
+      getDataFlag = true;
+    }
+    if (currentLine.endsWith("sd"))
+    {
+      digitalWrite(LED, LOW);
+      Serial.println("Stop Reading");
+      getDataFlag = false;
+    }
+    if (currentLine.endsWith("calib"))
+    {
+      calibrationFlag = true;
+    }
+    if (currentLine.endsWith("susp"))
+    {
+      powerSaveMode = true;
+    }
+
+  }
 }
 
 

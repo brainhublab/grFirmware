@@ -316,7 +316,7 @@ void calibrate()
   resetSa0();
   for (int8_t imu_id = 0; imu_id < IMUS_NUMBER; imu_id++)
   {
-    analogWrite(LED, 220);
+    analogWrite(LED, 250);
     switchIMU(imu_id);
     checkIfIMUConnected(imu_id);
     if (connected_imu_ids[imu_id] == 1)
