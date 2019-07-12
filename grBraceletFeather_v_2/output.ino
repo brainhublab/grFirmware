@@ -22,22 +22,25 @@ void getData()
     readIMU(i);
     //  Serial.print("---|");
     //  Serial.print(i);
-    /*
-      Serial.print("|---");
-      Serial.print(IMUS[i].gyro_x);
+    
+      //Serial.print("|---");
+      if(i == 5)
+      {
+    /*  Serial.print(IMUS[i].gyro_x);
       Serial.print(" ");
       Serial.print(IMUS[i].gyro_y);
       Serial.print(" ");
       Serial.print(IMUS[i].gyro_z);
-      Serial.print(" ");
-
+      Serial.print(" ");*/
       Serial.print(IMUS[i].acc_x);
       Serial.print(" ");
       Serial.print(IMUS[i].acc_y);
       Serial.print(" ");
-      Serial.print(IMUS[i].acc_z);
+      Serial.println(IMUS[i].acc_z);
     
-*/
+      }
+
+
 
   }
   //Serial.println("------------------------| ");

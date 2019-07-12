@@ -94,7 +94,7 @@ void ledOnConnection()
   current_timer = millis();
   if (current_timer - led_timer_rm >= 10)
   {
-    Serial.println("-----------------------------ONCONNECTION");
+  //  Serial.println("-----------------------------ONCONNECTION");
     led_timer_rm = current_timer;
 
     analogWrite(LED, brightness);
@@ -113,9 +113,9 @@ void ledSessionMode()
   current_timer = millis();
   if (current_timer - led_timer_rm >= 40)
   {
-    Serial.println("-----------------------------ONSESSIONMODE");
-    Serial.println(brightness);
-    Serial.println(fade_amount);
+  //  Serial.println("-----------------------------ONSESSIONMODE");
+   // Serial.println(brightness);
+   // Serial.println(fade_amount);
     led_timer_rm = current_timer;
 
     analogWrite(LED, brightness);
@@ -139,13 +139,13 @@ void ledWaitMode()
   if ((current_timer - led_timer_rm) >= 100)
   {
     led_timer_rm = current_timer;
-    Serial.println("-----------------------------ONWAITMODE");
-    Serial.println(brightness);
-    Serial.println(fade_amount);
+   // Serial.println("-----------------------------ONWAITMODE");
+    //Serial.println(brightness);
+    //Serial.println(fade_amount);
     analogWrite(LED, brightness);
     // change the brightness for next time through the loop:
     brightness += fade_amount;
-    if ((brightness == 0) || (brightness >= 140))
+    if ((brightness == 0) || (brightness > 250))
     {
       fade_amount *= -1;//-fade_amount;
     }

@@ -16,7 +16,8 @@ void initWifi()
 
 void tryToConnect()
 {
-  while (status != WL_CONNECTED)
+  int8_t tryToConnect = 0;
+  while (status != WL_CONNECTED && tryToConnect <= connectionAttempts)
   {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
@@ -31,6 +32,7 @@ void tryToConnect()
       ledOnConnection();
     }
     //   delay(10000);
+    tryToConnect ++;
   }
 
   server.begin();
@@ -84,6 +86,8 @@ void checkIncomingEvent(WiFiClient* client)
     if (currentLine.endsWith("calib"))
     {
       calibrationFlag = true;
+     // Serial.println("COOOOOOOOOOOOOOOOOOOOOOOOMMMMMMMMMMMMMMMAAAAAAAAAAAAAAAAANNNNNNNNNNNNNNNNNDDDDDDDDDDD");
+      calibrate();
     }
     if (currentLine.endsWith("susp"))
     {

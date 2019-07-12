@@ -128,11 +128,13 @@ bool powerSaveMode = false;
 //WiFiClient client;
 
 unsigned long ledLongLow = 0;
-uint32_t sampleRate = 10;
+//uint32_t sampleRate = 10;
 unsigned long tryConnectionTimer = 0;
 
 bool sessionMode = false;
 bool waitMode = true;
+
+int8_t connectionAttempts = 3;
 void setup()
 {
   //pinMode(A1, OUTPUT);
@@ -176,7 +178,10 @@ void setup()
 
   //tcConfigure(sampleRate);
   //tcStartCounter();
- // startTimer(10);
+  //startTimer(10);
+
+  //tcConfigure(sampleRate); //configure the timer to run at <sampleRate>Hertz
+  //tcStartCounter();
 
   for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
@@ -195,7 +200,7 @@ void setup()
 
   //battery setup
   currentBatteryLevel = getBattLevel();
-   attachInterrupt(BUTTON_PIN, buttonClick, FALLING);
+  attachInterrupt(BUTTON_PIN, buttonClick, FALLING);
   /*  buttn.attachClick(click1);
     buttn.attachDoubleClick(doubleclick1);
     buttn.attachLongPressStart(longPress1);
@@ -204,7 +209,7 @@ void setup()
 
 void loop()
 {
-  //bttnTick();
+  //  bttnTick();
   buttonClick();
   ledBlink();
   if (millis() - battTimer >= battMeasurePeriod)
@@ -213,6 +218,7 @@ void loop()
     // updatePowerMode();
     ledBlink();
   }
+  //Serial.print("---------------------------------------CLIENT WAIT");
   if (sessionMode)
   {
     if (status != WL_CONNECTED)
@@ -227,7 +233,7 @@ void loop()
 
       //WiFiClient
       client = server.available();   // listen for incoming clients
-      //Serial.print("---------------------------------------CLIENT WAIT");
+     // Serial.print("---------------------------------------CLIENT SESSION");
       //Serial.println();
       if (client)
       {
@@ -237,32 +243,41 @@ void loop()
         {
           buttonClick();
           ledBlink();
-          //Serial.println("------------------------------------------CLIENT CONNECTED");
+          Serial.print(sessionMode);
+        
+          //if (sessionMode)//bttnClicked )
+          //{
+            //Serial.println("------------------------------------------CLIENT CONNECTED");
 
-          if (millis() - battTimer >= battMeasurePeriod)
-          {
-            battTimer = millis();
-            currentBatteryLevel = getBattLevel();
-          }
-          //Serial.println("------------------------------------------CLIENT CONNECTED");
-          // loop while the client's connected
-          checkIncomingEvent(&client);
-          onSessionTimer = millis();
-          if (getDataFlag && onSessionTimer - oldOnSessionTimer >= 25)
-          {
-            // Serial.print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>____");
-            oldOnSessionTimer = onSessionTimer;
-            getData();
-            resetSa0();
+            if (millis() - battTimer >= battMeasurePeriod)
+            {
+              battTimer = millis();
+              currentBatteryLevel = getBattLevel();
+            }
+           
+            // loop while the client's connected
 
-            generatePackage();
-            //client.println(output_data);
-            client.write(output_data, sizeof(output_data));
+            checkIncomingEvent(&client);
+            onSessionTimer = millis();
+            if (getDataFlag && onSessionTimer - oldOnSessionTimer >= 25)
+            {
+              // Serial.print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>____");
+              oldOnSessionTimer = onSessionTimer;
+              getData();
+              resetSa0();
 
-          }
+              generatePackage();
+              //client.println(output_data);
+              client.write(output_data, sizeof(output_data));
+
+            }
+
+          //}
+
 
         }
         // close the connection:
+        getDataFlag = false;
         client.stop();
         Serial.println("client disconnected");
       }

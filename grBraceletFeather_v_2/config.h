@@ -4,6 +4,7 @@
 #define CPU_HZ 48000000000
 #define TIMER_PRESCALER_DIV 1024
 
+uint32_t sampleRate = 20; //sample rate of the sine wave in Hertz, how many times per second the TC5_Handler() function gets called per second basically
 
 #define LED 13 //let pin 
 #define BUTTON_PIN 0 //main button 

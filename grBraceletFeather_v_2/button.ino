@@ -5,7 +5,8 @@ void buttonClick()
   {
     sessionMode = !sessionMode;
     waitMode = !waitMode;
-    //brightness = 0;
+    
+   // brightness = 0;
     //NVIC_SystemReset();
     Serial.println("SINGLECLICK\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
   }
@@ -13,7 +14,7 @@ void buttonClick()
   {
     //sessionMode = !sessionMode;
     //waitMode = !waitMode;
-//    enable disable led strip
+  //enable disable led strip
     NVIC_SystemReset();
     Serial.println("---------------------------------------------Restart");
     delay(20);
