@@ -1,53 +1,38 @@
-void buttonClick()
+void pollAll()
 {
+  // poll in function in case new buttons are added
   bttn.poll();
-  if (bttn.singleClick())
-  {
-    sessionMode = !sessionMode;
-    waitMode = !waitMode;
-    
-   // brightness = 0;
-    //NVIC_SystemReset();
-    Serial.println("SINGLECLICK\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
-  }
-  else if (bttn.doubleClick())
-  {
-    //sessionMode = !sessionMode;
-    //waitMode = !waitMode;
-  //enable disable led strip
-    NVIC_SystemReset();
-    Serial.println("---------------------------------------------Restart");
-    delay(20);
-  }
-  else if (bttn.longPress())
-  {
-    updatePowerMode();
-  }
-
 }
 
-/*
-  void buttonClick()
-  {
-
-    buttn.tick();
-
-
+// Used in interrupt callback to set button flags
+void buttonActions()
+{
+  if (bttn.longPress()) {
+    LONG_PRESS = true;
+  } else if (bttn.doubleClick()) {
+    DOUBLE_CLICK = true;
+  } else if (bttn.singleClick()) {
+    SINGLE_CLICK = true;
   }
+}
 
-  void click1() {
-  Serial.println("Button 1 click.");
-  } // click1
-
-
-  // This function will be called when the button1 was pressed 2 times in a short timeframe.
-  void doubleclick1() {
-  Serial.println("Button 1 doubleclick.");
-  } // doubleclick1
-
-  // This function will be called once, when the button1 is released after beeing pressed for a long time.
-  void longPress1() {
-  Serial.println("Button 1 longPress stop");
-  updatePowerMode();
+// Actual handling of button events
+void handleBtn()
+{
+  // check for bttn input
+  if (LONG_PRESS) {
+    Serial.println("long press");
+    LONG_PRESS = false;
+    updatePowerMode();
+  } else if (DOUBLE_CLICK) {
+    Serial.println("double click");
+    DOUBLE_CLICK = false;
+    NVIC_SystemReset();
+    delay(20);
+  } else if (SINGLE_CLICK) {
+    Serial.println("single click");
+    SINGLE_CLICK = false;
+    sessionMode = !sessionMode;
+    waitMode = !waitMode;
   }
-*/
+}

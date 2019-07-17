@@ -18,6 +18,10 @@
 #endif
 int asd = 0;
 
+// Used for the interrupt timer
+#define CPU_HZ 48000000
+#define TIMER_PRESCALER_DIV 1024
+
 #define hb(x) ( (x) >> (8) & (0xff) ) // keep upper 8 bits
 #define lb(x) ( (x) & (0xff) ) // keep lower 8 bits
 
@@ -48,6 +52,11 @@ int asd = 0;
 #define SENDING_DATA_TIMER_BOUND 6
 #define PALM_INDEX 0
 
+// for button handling
+bool SINGLE_CLICK = false;
+bool DOUBLE_CLICK = false;
+bool LONG_PRESS = false;
+// end for button handling
 
 //objects
 
@@ -200,18 +209,15 @@ void setup()
 
   //battery setup
   currentBatteryLevel = getBattLevel();
-  attachInterrupt(BUTTON_PIN, buttonClick, FALLING);
-  /*  buttn.attachClick(click1);
-    buttn.attachDoubleClick(doubleclick1);
-    buttn.attachLongPressStart(longPress1);
-  */
+  
+  // set up and start timer interrupt
+  startTimer(50);
 }
 
 void loop()
 {
-  //  bttnTick();
-  buttonClick();
-  ledBlink();
+  handleBtn();
+  
   if (millis() - battTimer >= battMeasurePeriod)
   {
     battTimer = millis();
@@ -228,12 +234,11 @@ void loop()
     }
     else
     {
-      buttonClick();
       ledBlink();
 
       //WiFiClient
       client = server.available();   // listen for incoming clients
-     // Serial.print("---------------------------------------CLIENT SESSION");
+      // Serial.print("---------------------------------------CLIENT SESSION");
       //Serial.println();
       if (client)
       {
@@ -241,7 +246,9 @@ void loop()
         String currentLine = "";// make a String to hold incoming data from the client
         while (client.connected())
         {
-          buttonClick();
+          // Handle button events while connected
+          handleBtn();
+          
           ledBlink();
           Serial.print(sessionMode);
         
@@ -285,7 +292,7 @@ void loop()
   }
   else if (waitMode)
   {
-
+    ledBlink();
   }
 
 

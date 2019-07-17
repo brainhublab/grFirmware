@@ -91,6 +91,7 @@ bool braceletNotMoved()
 }
 void ledOnConnection()
 {
+  Serial.print("on connection");
   current_timer = millis();
   if (current_timer - led_timer_rm >= 10)
   {
@@ -109,6 +110,7 @@ void ledOnConnection()
 }
 void ledSessionMode()
 {
+  Serial.println("session mode");
   // reverse the direction of the fading at the ends of the fade:
   current_timer = millis();
   if (current_timer - led_timer_rm >= 40)
@@ -134,6 +136,7 @@ void ledSessionMode()
 void ledWaitMode()
 {
   // reverse the direction of the fading at the ends of the fade:
+  Serial.println("wait mode");
 
   current_timer = millis();
   if ((current_timer - led_timer_rm) >= 100)
