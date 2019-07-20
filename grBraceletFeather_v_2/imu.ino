@@ -13,6 +13,7 @@ void checkIfIMUConnected(int8_t imuId)
   //unsigned long timertrs = millis();
   Wire.beginTransmission(ACTIVE_ADDR);
   // delay(3);
+
   byte err = Wire.endTransmission();
   if (err == 0)
   {
@@ -21,6 +22,7 @@ void checkIfIMUConnected(int8_t imuId)
       singleImuInit();
       disconnected_imu_ids[imuId] = 0;
     }
+
     connected_imu_ids[imuId] = 1;
   }
   else if (err != 0)
@@ -28,8 +30,6 @@ void checkIfIMUConnected(int8_t imuId)
     connected_imu_ids[imuId] = 0;
     disconnected_imu_ids[imuId] = 1;
   }
-
-
 }
 
 void sa0PinsInit()
@@ -37,11 +37,9 @@ void sa0PinsInit()
 
   for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
-
     pinMode(sa0[i], OUTPUT);
     digitalWrite(sa0[i], LOW);
     Serial.println("pins init");
-
   }
   for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
@@ -151,7 +149,7 @@ void accRead(int8_t imu_id)
       IMUS[imu_id].acc_y = FINGER_IMU_SIGN[4] * (IMUS[imu_id].A_AN[1]);
       IMUS[imu_id].acc_z = FINGER_IMU_SIGN[5] * (IMUS[imu_id].A_AN[2]);
     }
-    
+
   }
 
 

@@ -11,7 +11,6 @@ void initWifi()
   }
 
   WiFi.maxLowPowerMode();
-
 }
 
 void tryToConnect()
@@ -21,17 +20,17 @@ void tryToConnect()
   {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
+
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
     status = WiFi.begin(ssid, pass);
 
-    // wait 10 seconds for connection:
     unsigned long onConTimer = millis();
-    while (millis() - onConTimer <= 10000)
+    while (millis() - onConTimer <= 10000) // wait 10 seconds for connection:
     {
       Serial.println(millis() - onConTimer );
       ledOnConnection();
     }
-    //   delay(10000);
+
     tryToConnect ++;
   }
 
@@ -39,61 +38,55 @@ void tryToConnect()
   Serial.println("Connected to wifi");
 
   printWiFiStatus();
-  //brightness = 0;
-  //analogWrite(LED, 250);
 }
 
 void checkIncomingEvent(WiFiClient* client)
 {
   while (client->available()) //check for bugs if freeze change it to if statement
-  { // if there's bytes to read from the client,
-    char c = client->read();             // read a byte, then
-    Serial.write(c);                    // print it out the serial monitor
-    if (c == '\n') {                    // if the byte is a newline character
-      if (currentLine.length() == 0)
+  {
+    char c = client->read(); // read a byte, then
+    Serial.write(c); // print it out the serial monitor
+
+    if (c == '\n') {
+      // if you got a newline, then clear currentLine
+      if (currentLine.length() != 0)
       {
-        break;
-      }
-      else
-      { // if you got a newline, then clear currentLine:
         currentLine = "";
       }
     }
     else if (c != '\r')
     { // if you got anything else but a carriage return character,
-      currentLine += c;      // add it to the end of the currentLine
+      currentLine += c; // add it to the end of the currentLine
     }
 
     // Check to see if the client request was "ga" - get attributes, "gd" - get data, "sd" - stop data
     if (currentLine.endsWith("ga"))
     {
-      // analogWrite(LED, 254);
       client->println("GR[L] 123456" );
-      // analogWrite(LED, 0);
-
     }
+
     if (currentLine.endsWith("gd"))
     {
-      //analogWrite(LED, 0);
       getDataFlag = true;
     }
+
     if (currentLine.endsWith("sd"))
     {
       digitalWrite(LED, LOW);
       Serial.println("Stop Reading");
       getDataFlag = false;
     }
+
     if (currentLine.endsWith("calib"))
     {
       calibrationFlag = true;
-     // Serial.println("COOOOOOOOOOOOOOOOOOOOOOOOMMMMMMMMMMMMMMMAAAAAAAAAAAAAAAAANNNNNNNNNNNNNNNNNDDDDDDDDDDD");
       calibrate();
     }
+
     if (currentLine.endsWith("susp"))
     {
       powerSaveMode = true;
     }
-
   }
 }
 

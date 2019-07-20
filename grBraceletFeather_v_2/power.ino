@@ -5,10 +5,10 @@ uint16_t getBattVoltage()
   return (uint16_t)analogRead(VBAT) * 2 * 3300 / 1024;
 }
 
-
 uint8_t getBattLevel()
 {
   uint16_t voltage = getBattVoltage();
+
   if (voltage <= minBatteryVoltage)
   {
     return 0;
@@ -23,25 +23,15 @@ uint8_t getBattLevel()
   }
 }
 
-
 bool isCriticalPower()
 {
-  if (getBattLevel() <= 20)
-  {
-    return true;
-  }
-  return false;
+  return getBattLevel() <= 20;
 }
 
-bool eneterPowerSaveMode()
+bool enterPowerSaveMode()
 {
-  if (braceletNotMoved)
-  {
-    return true;
-  }
-  return false;
+  return braceletNotMoved();
 }
-
 
 void enterPowerSaveIMU()
 {
@@ -49,26 +39,23 @@ void enterPowerSaveIMU()
   {
     resetSa0();
     switchIMU(imu_id);
-    //disable acc
+
+    // disable acc
     gyro_acc.writeReg(LSM6::CTRL1_XL, 0x0C); // disable
     delay(20);
 
-    //disable gyro
-    gyro_acc.writeReg(LSM6::CTRL2_G, 0x0C); //disable
+    // disable gyro
+    gyro_acc.writeReg(LSM6::CTRL2_G, 0x0C); // disable
     delay(20);
-    //disable mag
-    mag.writeReg(LIS3MDL::CTRL_REG3, 0x2); //disable
+
+    // disable mag
+    mag.writeReg(LIS3MDL::CTRL_REG3, 0x2); // disable
     delay(20);
   }
 
-
-
   IMU_powered_on = false;
   grPrint("imu powered OFF");
-
-
 }
-
 
 void exitPowerSaveIMU()
 {
@@ -77,59 +64,52 @@ void exitPowerSaveIMU()
 }
 
 void enterPowerSaveMcu()
-{
-
-}
+{}
 
 void exitPowerSaveMcu()
-{
+{}
 
-}
 bool braceletNotMoved()
-{
+{}
 
-}
 void ledOnConnection()
 {
-  Serial.print("on connection");
   current_timer = millis();
+
   if (current_timer - led_timer_rm >= 10)
   {
-  //  Serial.println("-----------------------------ONCONNECTION");
+    // Serial.println("-----------------------------ONCONNECTION");
     led_timer_rm = current_timer;
 
     analogWrite(LED, brightness);
+
     // change the brightness for next time through the loop:
     brightness = brightness + 5;
     if (brightness >= 250)
     {
-      //fade_amount = -fade_amount;
       brightness = 0;
     }
   }
 }
 void ledSessionMode()
 {
-  Serial.println("session mode");
   // reverse the direction of the fading at the ends of the fade:
   current_timer = millis();
+
   if (current_timer - led_timer_rm >= 40)
   {
-  //  Serial.println("-----------------------------ONSESSIONMODE");
-   // Serial.println(brightness);
-   // Serial.println(fade_amount);
+    // Serial.println("-----------------------------ONSESSIONMODE");
     led_timer_rm = current_timer;
 
     analogWrite(LED, brightness);
+
     // change the brightness for next time through the loop:
     brightness = brightness + abs(fade_amount);
     if (brightness >= 250)
     {
-      //fade_amount = -fade_amount;
       brightness = 0;
     }
   }
-  //delay(30);
 
 }
 
@@ -142,19 +122,19 @@ void ledWaitMode()
   if ((current_timer - led_timer_rm) >= 100)
   {
     led_timer_rm = current_timer;
-   // Serial.println("-----------------------------ONWAITMODE");
-    //Serial.println(brightness);
-    //Serial.println(fade_amount);
+    // Serial.println("-----------------------------ONWAITMODE");
+    // Serial.println(brightness);
+    // Serial.println(fade_amount);
     analogWrite(LED, brightness);
     // change the brightness for next time through the loop:
     brightness += fade_amount;
     if ((brightness == 0) || (brightness > 250))
     {
-      fade_amount *= -1;//-fade_amount;
+      fade_amount *= -1; //-fade_amount;
     }
   }
-  //delay(30);
 }
+
 void ledLowPowerMode()
 {
   current_timer = millis();
@@ -171,29 +151,8 @@ void ledLowPowerMode()
       analogWrite(LED, 250);
     }
   }
-  /* current_timer = millis();
-    if (current_timer - led_timer_lm >= led_blink)//led_blink);
-    {
-     led_timer_lm = current_timer;
-
-     if (led_state == 0)
-     {
-       led_state = 220;
-     }
-     else
-     {
-       led_state = 0;
-     }
-     analogWrite(LED, led_state);
-  */
-  /* analogWrite(LED, 0);
-    delay(2000);
-    analogWrite(LED, 250);
-    delay(20);
-  */
-
-
 }
+
 void ledBlink()
 {
 
@@ -224,13 +183,12 @@ void updatePowerMode()
       WiFi.disconnect();
       status = WL_IDLE_STATUS;
     }
-
   }
   else
   {
     exitPowerSaveIMU();
     // delay(20);
-    //  imuInit();
+    // imuInit();
     calibrate();
     WiFi.noLowPowerMode();
 
@@ -238,6 +196,7 @@ void updatePowerMode()
 
   //currentBatteryLevel = getBattLevel();
 }
+
 uint8_t mapBattary(uint16_t voltage, uint16_t minVoltage, uint16_t maxVoltage)
 {
   uint8_t result = 105 - (105 / (1 + pow(1.724 * (voltage - minVoltage) / (maxVoltage - minVoltage), 5.5)));

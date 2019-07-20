@@ -22,17 +22,28 @@ void handleBtn()
   // check for bttn input
   if (LONG_PRESS) {
     Serial.println("long press");
+    // no matter state toggle to low power mode
     LONG_PRESS = false;
     updatePowerMode();
   } else if (DOUBLE_CLICK) {
+    // reset
     Serial.println("double click");
     DOUBLE_CLICK = false;
     NVIC_SystemReset();
     delay(20);
   } else if (SINGLE_CLICK) {
+    // switch between wait and session mode
     Serial.println("single click");
-    SINGLE_CLICK = false;
-    sessionMode = !sessionMode;
-    waitMode = !waitMode;
+
+    if (powerSaveMode) // check if in low power mode and exit first
+    {
+      updatePowerMode();
+    }
+    else // change between wait and session mode
+    {
+      SINGLE_CLICK = false;
+      sessionMode = !sessionMode;
+      waitMode = !waitMode;
+    }
   }
 }

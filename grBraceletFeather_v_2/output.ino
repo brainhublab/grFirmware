@@ -20,32 +20,25 @@ void getData()
     switchIMU(i);
     //checkIfIMUConnected(i);
     readIMU(i);
-    //  Serial.print("---|");
-    //  Serial.print(i);
-    
-      //Serial.print("|---");
-      if(i == 5)
-      {
-    /*  Serial.print(IMUS[i].gyro_x);
-      Serial.print(" ");
-      Serial.print(IMUS[i].gyro_y);
-      Serial.print(" ");
-      Serial.print(IMUS[i].gyro_z);
-      Serial.print(" ");*/
+
+    if(i == 5)
+    {
+      /*
+         Serial.print(IMUS[i].gyro_x);
+         Serial.print(" ");
+         Serial.print(IMUS[i].gyro_y);
+         Serial.print(" ");
+         Serial.print(IMUS[i].gyro_z);
+         Serial.print(" ");
+       */
+
       Serial.print(IMUS[i].acc_x);
       Serial.print(" ");
       Serial.print(IMUS[i].acc_y);
       Serial.print(" ");
       Serial.println(IMUS[i].acc_z);
-    
-      }
-
-
-
+    }
   }
-  //Serial.println("------------------------| ");
-
-
 }
 
 void generatePackage()
@@ -54,6 +47,7 @@ void generatePackage()
   memset(output_data, 0, sizeof(output_data));
 
   //output_data[0] = 0x3C;
+
   int j = 0;
   for (int8_t i = 0; i < 6; i++)
   {
@@ -80,18 +74,20 @@ void generatePackage()
     output_data[j + 18] = (int8_t)lb(IMUS[i].mag_z);
     j += 19;
   }
+
   output_data[114] = (int8_t)currentBatteryLevel;
   output_data[115] = '\r';
   output_data[116] = '\n';
 
-  /* int16_t result = ((output_data[1] & 0xFF) << 8 | (output_data[2] & 0xFF)  ) ;
-    Serial.println("|------------------|");
+  /*
+     int16_t result = ((output_data[1] & 0xFF) << 8 | (output_data[2] & 0xFF)  ) ;
+     Serial.println("|------------------|");
 
-    Serial.println(result);
+     Serial.println(result);
 
-    Serial.println("------------------");
+     Serial.println("------------------");
 
-    Serial.println(IMUS[0].gyro_x);
-    Serial.println("|------------------|");
-  */
+     Serial.println(IMUS[0].gyro_x);
+     Serial.println("|------------------|");
+   */
 }
