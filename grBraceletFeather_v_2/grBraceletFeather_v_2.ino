@@ -224,7 +224,6 @@ void loop()
           handleBtn();
 
           ledBlink();
-          Serial.print(sessionMode);
 
           if (millis() - battTimer >= battMeasurePeriod)
           {
@@ -233,8 +232,13 @@ void loop()
           }
 
           checkIncomingEvent(&client);
-          onSessionTimer = millis();
 
+          if (waitMode || powerSaveMode) // check if in wait or low power mode and skip sending data
+          {
+            continue;
+          }
+
+          onSessionTimer = millis();
           if (getDataFlag && onSessionTimer - oldOnSessionTimer >= 25)
           {
             // Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>____");
@@ -243,7 +247,7 @@ void loop()
             resetSa0();
 
             generatePackage();
-            //client.println(output_data);
+            // client.println(output_data);
             client.write(output_data, sizeof(output_data));
           }
         }

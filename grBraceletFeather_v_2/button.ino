@@ -35,13 +35,14 @@ void handleBtn()
     // switch between wait and session mode
     Serial.println("single click");
 
+    SINGLE_CLICK = false;
+
     if (powerSaveMode) // check if in low power mode and exit first
     {
       updatePowerMode();
     }
     else // change between wait and session mode
     {
-      SINGLE_CLICK = false;
       sessionMode = !sessionMode;
       waitMode = !waitMode;
     }
