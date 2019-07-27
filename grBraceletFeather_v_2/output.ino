@@ -6,6 +6,22 @@ void grPrint(String output)
   }
 }
 
+void grPrint(int output)
+{
+  if (SERIAL_VERBOSE_MODE)
+  {
+    Serial.println(output);
+  }
+}
+
+void grPrint(char* output)
+{
+  if (SERIAL_VERBOSE_MODE)
+  {
+    Serial.println(output);
+  }
+}
+
 // A small helper
 void error(const __FlashStringHelper*err)
 {
@@ -24,19 +40,25 @@ void getData()
     if(i == 5)
     {
       /*
-         Serial.print(IMUS[i].gyro_x);
-         Serial.print(" ");
-         Serial.print(IMUS[i].gyro_y);
-         Serial.print(" ");
-         Serial.print(IMUS[i].gyro_z);
-         Serial.print(" ");
+      if (SERIAL_VERBOSE_MODE)
+      {
+        Serial.print(IMUS[i].gyro_x);
+        Serial.print(" ");
+        Serial.print(IMUS[i].gyro_y);
+        Serial.print(" ");
+        Serial.print(IMUS[i].gyro_z);
+        Serial.print(" ");
+      }
        */
 
-      Serial.print(IMUS[i].acc_x);
-      Serial.print(" ");
-      Serial.print(IMUS[i].acc_y);
-      Serial.print(" ");
-      Serial.println(IMUS[i].acc_z);
+      if (SERIAL_VERBOSE_MODE)
+      {
+        Serial.print(IMUS[i].acc_x);
+        Serial.print(" ");
+        Serial.print(IMUS[i].acc_y);
+        Serial.print(" ");
+        Serial.println(IMUS[i].acc_z);
+      }
     }
   }
 }
@@ -81,13 +103,13 @@ void generatePackage()
 
   /*
      int16_t result = ((output_data[1] & 0xFF) << 8 | (output_data[2] & 0xFF)  ) ;
-     Serial.println("|------------------|");
+     grPrint("|------------------|");
 
-     Serial.println(result);
+     grPrint(result);
 
-     Serial.println("------------------");
+     grPrint("------------------");
 
-     Serial.println(IMUS[0].gyro_x);
-     Serial.println("|------------------|");
+     grPrint(IMUS[0].gyro_x);
+     grPrint("|------------------|");
    */
 }

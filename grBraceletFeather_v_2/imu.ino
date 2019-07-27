@@ -39,7 +39,7 @@ void sa0PinsInit()
   {
     pinMode(sa0[i], OUTPUT);
     digitalWrite(sa0[i], LOW);
-    Serial.println("pins init");
+    grPrint("pins init");
   }
   for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
@@ -62,7 +62,7 @@ void i2cInit()
 
 void switchIMU(int8_t imuId)
 {
-  //Serial.println("switch to imu id");
+  // grPrint("switch to imu id");
   /*if(imuId == 0)
     {
     digitalWrite(1, LOW);
@@ -78,7 +78,7 @@ void switchIMU(int8_t imuId)
   if (imuId > 0 )
   {
     //Serial.print("IMU IS HIGEST THEN 0:  ");
-    //Serial.println(imuId);
+    // grPrint(imuId);
     digitalWrite(sa0[imuId - 1], LOW);
   }
   else if (imuId == 0 )
@@ -128,7 +128,7 @@ void accRead(int8_t imu_id)
   // checkIfIMUConnected(imu_id);
   if (connected_imu_ids[imu_id] == 1)//Wire.endTransmission() == 0)
   {
-    //Serial.println(gyro_acc.last_status);
+    // grPrint(gyro_acc.last_status);
     gyro_acc.readAcc();
     /* store readed data from imu with 4 bit shifting */
     IMUS[imu_id].A_AN[0] = gyro_acc.a.x >> 4;
@@ -269,13 +269,13 @@ void magSetEmpty(int8_t imu_id)
 
 void imuInit()
 {
-  Serial.println("In imu init");
+  grPrint("In imu init");
 
   for (int8_t i = 0; i < IMUS_NUMBER; i++)
   {
     if (connected_imu_ids[i])
     {
-      Serial.println("In imu init");
+      grPrint("In imu init");
       switchIMU(i);
       delay(10);
       accInit();
@@ -287,7 +287,7 @@ void imuInit()
       magInit();
       delay(10);
     }
-    Serial.println("In imu init1");
+    grPrint("In imu init1");
   }
   resetSa0();//TODO check if need to reset sa0
 }
@@ -295,12 +295,12 @@ void imuInit()
 void singleImuInit()
 {
   //delay(1);
-  //Serial.println("In Single Init ACC");
+  // grPrint("In Single Init ACC");
 
   accInit();
-  //Serial.println("In Single Init GYGO");
+  // grPrint("In Single Init GYGO");
   gyroInit();
-  //Serial.println("In Single Init MAG");
+  // grPrint("In Single Init MAG");
   magInit();
 }
 
@@ -350,7 +350,7 @@ void calibrate()
        }
       }*/
     analogWrite(LED, 0);
-    Serial.println("==============================||=============================||");
+    grPrint("==============================||=============================||");
     delay(20);
     resetSa0();
   }
@@ -363,14 +363,14 @@ void readIMU(int8_t i)
   checkIfIMUConnected(i);
   if (connected_imu_ids[i] == 1)
   {
-    //Serial.println("ReadIMU ACC");
+    // grPrint("ReadIMU ACC");
     accRead(i);
     // delay(1);
-    //Serial.println("ReadIMU GYRO");
+    // grPrint("ReadIMU GYRO");
 
     gyroRead(i);
     //  delay(1);
-    //Serial.println("ReadIMU MAG");
+    // grPrint("ReadIMU MAG");
 
     magRead(i);
     //delay(1);

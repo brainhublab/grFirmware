@@ -6,11 +6,11 @@
 
 uint32_t sampleRate = 20; //sample rate of the sine wave in Hertz, how many times per second the TC5_Handler() function gets called per second basically
 
-#define LED 13 //let pin 
-#define BUTTON_PIN 0 //main button 
-#define LED_MARKERS A0 //led markers pin 
+#define LED 13 //let pin
+#define BUTTON_PIN 0 //main button
+#define LED_MARKERS A0 //led markers pin
 //imu addres change triger pins
-int8_t PALM = 1; //5 
+int8_t PALM = 1; //5
 int8_t THUMB = 6; //6
 int8_t INDEX = 5; //1
 int8_t MIDDLE  = 11; //10
@@ -22,7 +22,7 @@ int8_t sa0[6] = { PINKY, RING, MIDDLE, INDEX, THUMB, PALM};
 /*bluetooth
 
 */
-#define BUFSIZE 160 //size of reading buffer 
+#define BUFSIZE 160 //size of reading buffer
 #define VERBOSE_MODE true //need for debuging
 //wifi defs
 #define SECRET_SSID "gr-ap"

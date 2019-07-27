@@ -22,7 +22,7 @@ unsigned long oldTime;
 
 // Set watchdog timeouts
 #define WATCHDOG_SETUP_TIMEOUT 4000
-#define WATCHDOG_LOOP_TIMEOUT 100
+#define WATCHDOG_LOOP_TIMEOUT 500
 
 // Used for the interrupt timer
 #define CPU_HZ 48000000
@@ -183,7 +183,7 @@ void setup()
 
   for (int8_t i = 0; i < 6; i++)
   {
-    Serial.println(connected_imu_ids[i]);
+    grPrint(connected_imu_ids[i]);
   }
 
   oldOnSessionTimer = 0;
@@ -195,24 +195,15 @@ void setup()
   startTimer(50);
 
   Watchdog.disable();
-  int countdownMs = Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
-  Serial.print("Watchdog enabled: ");
-  Serial.print(countdownMs);
-  Serial.println("ms");
+  Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
 }
 
 void loop()
 {
-  unsigned long time = millis();
-  Serial.print("time: ");
-  Serial.print(time - oldTime);
-  Serial.println("ms");
-  oldTime = time;
   // reset watchdog so it knows controller is not hanging
-  Watchdog.reset();
-
   handleBtn();
 
+  Watchdog.reset();
   if (millis() - battTimer >= battMeasurePeriod)
   {
     battTimer = millis();
@@ -220,7 +211,7 @@ void loop()
     ledBlink();
   }
 
-  //Serial.println("---------------------------------------CLIENT WAIT");
+  // grPrint("---------------------------------------CLIENT WAIT");
   if (sessionMode)
   {
     if (status != WL_CONNECTED)
@@ -228,7 +219,7 @@ void loop()
       // Disable watchdog while trying to connect since it takes more time
       Watchdog.disable();
       tryToConnect();
-      Serial.println("\nStarting connection to server...");
+      grPrint("\nStarting connection to server...");
       // and enable watchdog it again
       Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
     }
@@ -238,7 +229,7 @@ void loop()
 
       //WiFiClient
       client = server.available();   // listen for incoming clients
-      // Serial.println("---------------------------------------CLIENT SESSION");
+      // grPrint("---------------------------------------CLIENT SESSION");
       if (client)
       {
         // if you get a client,
@@ -247,15 +238,13 @@ void loop()
         while (client.connected()) // loop while the client's connected
         {
           unsigned long time = millis();
-          Serial.print("time: ");
-          Serial.print(time - oldTime);
-          Serial.println("ms");
+          grPrint(time - oldTime);
           oldTime = time;
 
           // Reset in while loop since we might spend some time in here
           Watchdog.reset();
 
-          //Serial.println("------------------------------------------CLIENT CONNECTED");
+          // grPrint("------------------------------------------CLIENT CONNECTED");
 
           // Handle button events while connected
           handleBtn();
@@ -278,7 +267,7 @@ void loop()
           onSessionTimer = millis();
           if (getDataFlag && onSessionTimer - oldOnSessionTimer >= 25)
           {
-            // Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>____");
+            // grPrint(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>____");
             oldOnSessionTimer = onSessionTimer;
             getData();
             resetSa0();
@@ -292,7 +281,7 @@ void loop()
         // close the connection:
         getDataFlag = false;
         client.stop();
-        Serial.println("client disconnected");
+        grPrint("client disconnected");
       }
     }
   }

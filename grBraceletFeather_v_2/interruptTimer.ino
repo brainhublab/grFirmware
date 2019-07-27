@@ -5,8 +5,8 @@ void setTimerFrequency(int frequencyHz) {
   // to prevent any jitter or disconnect when changing the compare value.
   TC->COUNT.reg = map(TC->COUNT.reg, 0, TC->CC[0].reg, 0, compareValue);
   TC->CC[0].reg = compareValue;
-  Serial.println(TC->COUNT.reg);
-  Serial.println(TC->CC[0].reg);
+  // grPrint(TC->COUNT.reg);
+  // grPrint(TC->CC[0].reg);
   while (TC->STATUS.bit.SYNCBUSY == 1);
 }
 
@@ -50,7 +50,7 @@ void TC3_Handler() {
   // we toggle the LED.
   if (TC->INTFLAG.bit.MC0 == 1) {
     TC->INTFLAG.bit.MC0 = 1;
-    
+
     // Buttons are handled here
     pollAll(); // polling buttons has priority
     buttonActions();

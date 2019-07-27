@@ -5,7 +5,7 @@ void initWifi()
   // check for the presence of the shield:
   if (WiFi.status() == WL_NO_SHIELD)
   {
-    Serial.println("WiFi shield not present");
+    grPrint("WiFi shield not present");
     // don't continue:
     while (true);
   }
@@ -18,8 +18,11 @@ void tryToConnect()
   int8_t tryToConnect = 0;
   while (status != WL_CONNECTED && tryToConnect <= connectionAttempts)
   {
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(ssid);
+    if (SERIAL_VERBOSE_MODE)
+    {
+      Serial.print("Attempting to connect to SSID: ");
+      Serial.println(ssid);
+    }
 
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
     status = WiFi.begin(ssid, pass);
@@ -27,7 +30,7 @@ void tryToConnect()
     unsigned long onConTimer = millis();
     while (millis() - onConTimer <= 10000) // wait 10 seconds for connection:
     {
-      Serial.println(millis() - onConTimer );
+      grPrint(millis() - onConTimer );
       ledOnConnection();
     }
 
@@ -35,7 +38,7 @@ void tryToConnect()
   }
 
   server.begin();
-  Serial.println("Connected to wifi");
+  grPrint("Connected to wifi");
 
   printWiFiStatus();
 }
@@ -45,7 +48,7 @@ void checkIncomingEvent(WiFiClient* client)
   while (client->available()) //check for bugs if freeze change it to if statement
   {
     char c = client->read(); // read a byte, then
-    Serial.write(c); // print it out the serial monitor
+    grPrint(c); // print it out the serial monitor
 
     if (c == '\n') {
       // if you got a newline, then clear currentLine
@@ -73,7 +76,7 @@ void checkIncomingEvent(WiFiClient* client)
     if (currentLine.endsWith("sd"))
     {
       digitalWrite(LED, LOW);
-      Serial.println("Stop Reading");
+      grPrint("Stop Reading");
       getDataFlag = false;
     }
 
@@ -93,31 +96,43 @@ void checkIncomingEvent(WiFiClient* client)
 
 void printWiFiStatus() {
   // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
+  if (SERIAL_VERBOSE_MODE)
+  {
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+  }
 
   // print your WiFi shield's IP address:
   IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
+  if (SERIAL_VERBOSE_MODE)
+  {
+    Serial.print("IP Address: ");
+    Serial.println(ip);
+  }
 
   // print the received signal strength:
   long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
+  if (SERIAL_VERBOSE_MODE)
+  {
+    Serial.print("signal strength (RSSI):");
+    Serial.print(rssi);
+    Serial.println(" dBm");
+  }
 
   WiFi.macAddress(mac);
-  Serial.print("MAC: ");
-  Serial.print(mac[5], HEX);
-  Serial.print(":");
-  Serial.print(mac[4], HEX);
-  Serial.print(":");
-  Serial.print(mac[3], HEX);
-  Serial.print(":");
-  Serial.print(mac[2], HEX);
-  Serial.print(":");
-  Serial.print(mac[1], HEX);
-  Serial.print(":");
-  Serial.println(mac[0], HEX);
+  if (SERIAL_VERBOSE_MODE)
+  {
+    Serial.print("MAC: ");
+    Serial.print(mac[5], HEX);
+    Serial.print(":");
+    Serial.print(mac[4], HEX);
+    Serial.print(":");
+    Serial.print(mac[3], HEX);
+    Serial.print(":");
+    Serial.print(mac[2], HEX);
+    Serial.print(":");
+    Serial.print(mac[1], HEX);
+    Serial.print(":");
+    Serial.println(mac[0], HEX);
+  }
 }
