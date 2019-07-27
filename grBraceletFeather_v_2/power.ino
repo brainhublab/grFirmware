@@ -116,8 +116,6 @@ void ledSessionMode()
 void ledWaitMode()
 {
   // reverse the direction of the fading at the ends of the fade:
-  Serial.println("wait mode");
-
   current_timer = millis();
   if ((current_timer - led_timer_rm) >= 100)
   {
@@ -140,7 +138,7 @@ void ledLowPowerMode()
   current_timer = millis();
   if (current_timer - led_timer_lm >= 20)
   {
-    Serial.println("-----------------------------ONLOWPOWERMODE");
+    // Serial.println("-----------------------------ONLOWPOWERMODE");
 
     led_timer_lm = current_timer;
 

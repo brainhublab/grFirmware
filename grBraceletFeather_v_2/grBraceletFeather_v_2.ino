@@ -15,6 +15,15 @@
 #include <SoftwareSerial.h>
 #endif
 
+// Watchdog to reset controller if I2C hangs
+#include <Adafruit_SleepyDog.h>
+
+unsigned long oldTime;
+
+// Set watchdog timeouts
+#define WATCHDOG_SETUP_TIMEOUT 4000
+#define WATCHDOG_LOOP_TIMEOUT 100
+
 // Used for the interrupt timer
 #define CPU_HZ 48000000
 #define TIMER_PRESCALER_DIV 1024
@@ -134,6 +143,7 @@ int8_t connectionAttempts = 3;
 
 void setup()
 {
+  Watchdog.enable(WATCHDOG_SETUP_TIMEOUT);
   if (SERIAL_VERBOSE_MODE)
   {
     Serial.begin(115200);
@@ -183,10 +193,24 @@ void setup()
 
   // set up and start timer interrupt
   startTimer(50);
+
+  Watchdog.disable();
+  int countdownMs = Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
+  Serial.print("Watchdog enabled: ");
+  Serial.print(countdownMs);
+  Serial.println("ms");
 }
 
 void loop()
 {
+  unsigned long time = millis();
+  Serial.print("time: ");
+  Serial.print(time - oldTime);
+  Serial.println("ms");
+  oldTime = time;
+  // reset watchdog so it knows controller is not hanging
+  Watchdog.reset();
+
   handleBtn();
 
   if (millis() - battTimer >= battMeasurePeriod)
@@ -201,8 +225,12 @@ void loop()
   {
     if (status != WL_CONNECTED)
     {
+      // Disable watchdog while trying to connect since it takes more time
+      Watchdog.disable();
       tryToConnect();
       Serial.println("\nStarting connection to server...");
+      // and enable watchdog it again
+      Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
     }
     else
     {
@@ -218,6 +246,15 @@ void loop()
 
         while (client.connected()) // loop while the client's connected
         {
+          unsigned long time = millis();
+          Serial.print("time: ");
+          Serial.print(time - oldTime);
+          Serial.println("ms");
+          oldTime = time;
+
+          // Reset in while loop since we might spend some time in here
+          Watchdog.reset();
+
           //Serial.println("------------------------------------------CLIENT CONNECTED");
 
           // Handle button events while connected
