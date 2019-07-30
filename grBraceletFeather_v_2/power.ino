@@ -184,12 +184,21 @@ void updatePowerMode()
   }
   else
   {
+    // set higher timeout value while calibrating
+    // we still need tha watchdog since calibration
+    // uses I2C and can hang
+    Watchdog.disable();
+    Watchdog.enable(WATCHDOG_SETUP_TIMEOUT);
+
     exitPowerSaveIMU();
     // delay(20);
     // imuInit();
     calibrate();
     WiFi.noLowPowerMode();
 
+    // and enable it back on
+    Watchdog.disable();
+    Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
   }
 
   //currentBatteryLevel = getBattLevel();
