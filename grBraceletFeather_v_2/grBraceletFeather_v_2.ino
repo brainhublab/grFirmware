@@ -42,7 +42,7 @@ unsigned long oldTime;
      return (float)aRaw;
      return (aRaw * 8.0) / 65535;
    }
-  */
+*/
 
 /*
    float convertRawGyro(int gRaw) {
@@ -52,7 +52,7 @@ unsigned long oldTime;
      return (float)gRaw;
      return (gRaw * 4000.0) / 65535;
    }
-  */
+*/
 
 #define IMUS_NUMBER 6 //number of IMUS
 #define SENDING_DATA_TIMER_BOUND 6
@@ -73,7 +73,7 @@ WiFiClient client;
 
 
 unsigned long current_timer,  led_timer_rm, led_timer_lm, start_timer, \
-                end_timer, onSessionTimer, oldOnSessionTimer; //timer needed for IR leds blinkin
+end_timer, onSessionTimer, oldOnSessionTimer; //timer needed for IR leds blinkin
 
 bool finger_is_connected = false; //flag to verify if current finger IMU is connected
 int8_t connected_imu_ids[IMUS_NUMBER] = {0, 0, 0, 0, 0, 0}; //boolean array conains values of connected IMU's
@@ -143,7 +143,7 @@ int8_t connectionAttempts = 3;
 
 void setup()
 {
-  Watchdog.enable(WATCHDOG_SETUP_TIMEOUT);
+  //Watchdog.enable(WATCHDOG_SETUP_TIMEOUT);
   if (SERIAL_VERBOSE_MODE)
   {
     Serial.begin(115200);
@@ -192,18 +192,21 @@ void setup()
   currentBatteryLevel = getBattLevel();
 
   // set up and start timer interrupt
-  startTimer(50);
+//  startTimer(50);
 
-  Watchdog.disable();
-  Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
+  //Watchdog.disable();
+  //Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
 }
 
 void loop()
 {
+  //getData();
   // reset watchdog so it knows controller is not hanging
+  pollAll(); // polling buttons has priority
+  buttonActions();
   handleBtn();
 
-  Watchdog.reset();
+  //Watchdog.reset();
   if (millis() - battTimer >= battMeasurePeriod)
   {
     battTimer = millis();
@@ -214,17 +217,23 @@ void loop()
   // grPrint("---------------------------------------CLIENT WAIT");
   if (sessionMode)
   {
+    pollAll(); // polling buttons has priority
+    buttonActions();
+    handleBtn();
     if (status != WL_CONNECTED)
     {
       // Disable watchdog while trying to connect since it takes more time
-      Watchdog.disable();
+      //Watchdog.disable();
       tryToConnect();
       grPrint("\nStarting connection to server...");
       // and enable watchdog it again
-      Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
+      //Watchdog.enable(WATCHDOG_LOOP_TIMEOUT);
     }
     else
     {
+      pollAll(); // polling buttons has priority
+      buttonActions();
+      handleBtn();
       ledBlink();
 
       //WiFiClient
@@ -237,12 +246,15 @@ void loop()
 
         while (client.connected()) // loop while the client's connected
         {
+          pollAll(); // polling buttons has priority
+          buttonActions();
+          handleBtn();
           unsigned long time = millis();
           grPrint(time - oldTime);
           oldTime = time;
 
           // Reset in while loop since we might spend some time in here
-          Watchdog.reset();
+          //Watchdog.reset();
 
           // grPrint("------------------------------------------CLIENT CONNECTED");
 

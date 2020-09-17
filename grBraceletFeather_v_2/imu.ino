@@ -110,8 +110,8 @@ void accInit()
   //Wire.beginTransmission(ACTIVE_ADDR);
   // if (connected_imu_ids[imu_id] == 0)//Wire.endTransmission() == 0)
   //{
-  //gyro_acc.init();
-  gyro_acc.init(LSM6::device_auto, LSM6::sa0_high);
+  gyro_acc.init();
+  //gyro_acc.init(LSM6::device_auto, LSM6::sa0_high);
   gyro_acc.enableDefault(); //enable default flags for both type of data gyro and acc
   gyro_acc.writeReg(LSM6::CTRL1_XL, 0x3C); // 3C 52 Hz, 8 g full scale A0 for 2G or 40 may be neet on 104 HZ
    gyro_acc.setTimeout(5);
@@ -225,7 +225,8 @@ void magInit()
   //Wire.beginTransmission(ACTIVE_ADDR);
   //  if (connected_imu_ids[imu_id] == 0)//Wire.endTransmission() == 0)
   //{
-  mag.init( LIS3MDL::device_auto, LIS3MDL::sa1_high);
+  //mag.init( LIS3MDL::device_auto, LIS3MDL::sa1_high);
+  mag.init();
   mag.enableDefault();
   mag.setTimeout(5);
   //gyro_acc.setTimeout(10);
@@ -316,7 +317,7 @@ void calibrate()
   {
     analogWrite(LED, 250);
     switchIMU(imu_id);
-    checkIfIMUConnected(imu_id);
+   // checkIfIMUConnected(imu_id);
     if (connected_imu_ids[imu_id] == 1)
     {
       memset(IMUS[imu_id].G_AN_OFFSET, 0, sizeof(IMUS[imu_id].G_AN_OFFSET));
@@ -351,8 +352,8 @@ void calibrate()
       }*/
     analogWrite(LED, 0);
     grPrint("==============================||=============================||");
-    delay(20);
-    resetSa0();
+    delay(50);
+    //resetSa0();
   }
   calibrationFlag = false;
 
@@ -365,15 +366,15 @@ void readIMU(int8_t i)
   {
     // grPrint("ReadIMU ACC");
     accRead(i);
-    // delay(1);
+     delay(1);
     // grPrint("ReadIMU GYRO");
 
     gyroRead(i);
-    //  delay(1);
+      delay(1);
     // grPrint("ReadIMU MAG");
 
     magRead(i);
-    //delay(1);
+    delay(1);
   }
   else
   {

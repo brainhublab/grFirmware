@@ -66,6 +66,7 @@ void checkIncomingEvent(WiFiClient* client)
     if (currentLine.endsWith("ga"))
     {
       client->println("GR[L] 123456" );
+      //client->println("GR[R] 123456" );
     }
 
     if (currentLine.endsWith("gd"))

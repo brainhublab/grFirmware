@@ -36,7 +36,7 @@ int8_t sa0[6] = { PINKY, RING, MIDDLE, INDEX, THUMB, PALM};
 #define BAT 6
 
 //vars
-#define SERIAL_VERBOSE_MODE 1
+#define SERIAL_VERBOSE_MODE 0
 String dev_name = "AT+GAPDEVNAME=GR[DEV]";
 //#define ACTIVE_ADDR 0x6B
 byte ACTIVE_ADDR = 0x6B;

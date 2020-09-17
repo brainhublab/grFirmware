@@ -1,3 +1,4 @@
+/*
 void setTimerFrequency(int frequencyHz) {
   int compareValue = (CPU_HZ / (TIMER_PRESCALER_DIV * frequencyHz)) - 1;
   TcCount16* TC = (TcCount16*) TC3;
@@ -52,7 +53,8 @@ void TC3_Handler() {
     TC->INTFLAG.bit.MC0 = 1;
 
     // Buttons are handled here
-    pollAll(); // polling buttons has priority
-    buttonActions();
+    //pollAll(); // polling buttons has priority
+    //buttonActions();
   }
 }
+*/

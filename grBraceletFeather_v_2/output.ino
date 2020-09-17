@@ -37,30 +37,33 @@ void getData()
     //checkIfIMUConnected(i);
     readIMU(i);
 
-    if(i == 5)
-    {
+    //if (i == 5)
+    //{
       /*
-      if (SERIAL_VERBOSE_MODE)
-      {
+        if (SERIAL_VERBOSE_MODE)
+        {
         Serial.print(IMUS[i].gyro_x);
         Serial.print(" ");
         Serial.print(IMUS[i].gyro_y);
         Serial.print(" ");
         Serial.print(IMUS[i].gyro_z);
         Serial.print(" ");
-      }
-       */
+        }
+      */
 
-      if (SERIAL_VERBOSE_MODE)
-      {
+      //if (SERIAL_VERBOSE_MODE)
+      //{
         Serial.print(IMUS[i].acc_x);
         Serial.print(" ");
         Serial.print(IMUS[i].acc_y);
         Serial.print(" ");
-        Serial.println(IMUS[i].acc_z);
-      }
-    }
+        Serial.print(IMUS[i].acc_z);
+        Serial.print(" ");
+
+      //}
+    //}
   }
+  Serial.println();
 }
 
 void generatePackage()
@@ -101,6 +104,49 @@ void generatePackage()
   output_data[115] = '\r';
   output_data[116] = '\n';
 
+  /*Serial.print(IMUS[0].acc_x);
+  Serial.print(" ");
+  Serial.print(IMUS[0].acc_y);
+  Serial.print(" ");
+  Serial.print(IMUS[0].acc_z);
+  Serial.print(" ");
+
+  Serial.print(IMUS[1].acc_x);
+  Serial.print(" ");
+  Serial.print(IMUS[1].acc_y);
+  Serial.print(" ");
+  Serial.print(IMUS[1].acc_z);
+  Serial.print(" ");
+
+  Serial.print(IMUS[2].acc_x);
+  Serial.print(" ");
+  Serial.print(IMUS[2].acc_y);
+  Serial.print(" ");
+  Serial.print(IMUS[2].acc_z);
+  Serial.print(" ");
+
+  Serial.print(IMUS[3].acc_x);
+  Serial.print(" ");
+  Serial.print(IMUS[3].acc_y);
+  Serial.print(" ");
+  Serial.print(IMUS[3].acc_z);
+  Serial.print(" ");
+
+  Serial.print(IMUS[4].acc_x);
+  Serial.print(" ");
+  Serial.print(IMUS[4].acc_y);
+  Serial.print(" ");
+  Serial.print(IMUS[4].acc_z);
+  Serial.print(" ");
+
+  Serial.print(IMUS[5].acc_x);
+  Serial.print(" ");
+  Serial.print(IMUS[5].acc_y);
+  Serial.print(" ");
+  Serial.println(IMUS[5].acc_z);*/
+  //Serial.print(" ");
+
+
   /*
      int16_t result = ((output_data[1] & 0xFF) << 8 | (output_data[2] & 0xFF)  ) ;
      grPrint("|------------------|");
@@ -111,5 +157,5 @@ void generatePackage()
 
      grPrint(IMUS[0].gyro_x);
      grPrint("|------------------|");
-   */
+  */
 }
